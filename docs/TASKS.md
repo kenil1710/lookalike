@@ -48,3 +48,13 @@ Status legend: [ ] todo · [~] in progress · [x] done · [!] blocked (reason in
 - [x] list size 667,466 bytes; truncated/unparsable/short list = evidence failure; tests
 - [x] smoke deploy of the hardened source on studio-dev (scratch instance)
 - [x] redeploy from the local test key (keystore skipped by instruction); reseed; verify; ADDRESSES.md, README, SEEDS.md; push
+
+## LISTED_COPY round (2026-09-30)
+- [x] escape routes A-G found, real Arbitrum tokens for A, C, D, E, F; failing tests written
+- [x] LISTED_COPY rule (labels from the whole list, symbol-qualified), HOMOGLYPH when disguised; EXACT_COPY removed
+- [x] ERC-20 check: totalSupply + balanceOf(0) + name or symbol; decimals optional (null)
+- [x] precedent accepts LISTED_COPY / HOMOGLYPH
+- [x] all 15 hole tests + 9 controls pass; merged into test_logic.py; full suite passes
+- [x] dry run with live RPC + live list on every seed token
+- [ ] redeploy CANONICAL, DEMO, SAFELIST from the new HEAD; reseed incl. hole tokens; M1-M4 twice
+- [ ] verify_source; README, ADDRESSES.md, SEEDS.md; push

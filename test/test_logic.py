@@ -217,11 +217,11 @@ class TestOfficialList(unittest.TestCase):
         f = LK.text_facts("USDC", "USDC", "usd-coin")
         f.update({"type": "ERC-20", "decimals": "6"})
         tok = USDC_ETH.lower()
+        copy = {"field": "symbol", "label": "USDC", "from": {"source": "coin"}}
         bad = {"chainId": 8453, "address": tok, "symbol": "USDC"}
-        self.assertEqual(LK.decide(tok, f, [tok], bad, 1, "usd-coin")["basis"], "EXACT_COPY")
+        self.assertEqual(LK.decide(tok, f, [tok], bad, 1, "usd-coin", None, copy)["basis"], "LISTED_COPY")
         good = {"chainId": 1, "address": tok, "symbol": "USDC"}
-        self.assertEqual(LK.decide(tok, f, [tok], good, 1, "usd-coin")["basis"], "OFFICIAL_LIST")
-
+        self.assertEqual(LK.decide(tok, f, [tok], good, 1, "usd-coin", None, copy)["basis"], "OFFICIAL_LIST")
 
 class TestAbi(unittest.TestCase):
     def test_string(self):
@@ -296,28 +296,48 @@ class TestRules(Base):
     def test_r5_exact_copy(self):
         self.fake("arbitrum", F1, "USDC", "USDC")
         cid = self.w.flag("arbitrum", F1, "usd-coin")
-        self.assertEqual((self.w.state(cid), self.w.basis(cid)), ("IMPERSONATOR", "EXACT_COPY"))
+        self.assertEqual((self.w.state(cid), self.w.basis(cid)), ("IMPERSONATOR", "LISTED_COPY"))
         self.assertEqual(stub.MODEL.calls, 0)
 
     def test_r5_tether_copy_on_arbitrum(self):
         # Arbitrum's official Tether is listed as USDT0; a plain "USDT" is a copy.
         self.fake("arbitrum", F1, "USDT", "USDT")
         cid = self.w.flag("arbitrum", F1, "tether")
-        self.assertEqual(self.w.basis(cid), "EXACT_COPY")
+        self.assertEqual(self.w.basis(cid), "LISTED_COPY")
 
     def test_r5_lowercase_symbol_is_exact(self):
         self.fake("base", F1, "usd coin", "usdc")
         cid = self.w.flag("base", F1, "usd-coin")
-        self.assertEqual(self.w.basis(cid), "EXACT_COPY")
+        self.assertEqual(self.w.basis(cid), "LISTED_COPY")
 
-    def test_r5_needs_no_disclosure(self):
+    def test_listed_copy_ignores_disclosure_words(self):
+        # Polygon USDC.e's on-chain label at another Polygon address: a copy.
         self.fake("polygon", F1, "USD Coin (PoS)", "USDC")
-        stub.MODEL.serve("VARIANT")
         cid = self.w.flag("polygon", F1, "usd-coin")
-        self.assertEqual((self.w.state(cid), self.w.basis(cid)), ("VARIANT", "MODEL"))
+        self.assertEqual((self.w.state(cid), self.w.basis(cid)), ("IMPERSONATOR", "LISTED_COPY"))
+        self.assertEqual(stub.MODEL.calls, 0)
+        self.assertEqual(self.w.case(cid)["facts"]["listed_copy"]["field"], "symbol")
+
+    def test_listed_copy_records_source_entry(self):
+        self.fake("base", F1, "Bridged USDC", "USDC.e")
+        c = self.w.case(self.w.flag("base", F1, "usd-coin"))
+        src = c["facts"]["listed_copy"]
+        self.assertEqual((src["label"], src["from"]["chainId"], src["from"]["symbol"]), ("USDCE", 10, "USDC.e"))
+
+    def test_other_tether_product_is_not_a_tether_label(self):
+        # Tether Gold (XAUT) is on the list but is not Tether.
+        stub.MODEL.serve("UNRELATED")
+        self.fake("ethereum", F1, "Tether Gold", "XAUT")
+        cid = self.w.flag("ethereum", F1, "tether")
+        self.assertEqual(self.w.basis(cid), "MODEL")
+
+    def test_celo_btc_is_not_a_wbtc_label(self):
+        self.fake("ethereum", F1, "Bitcoin", "BTC")
+        cid = self.w.flag("ethereum", F1, "wrapped-bitcoin")
+        self.assertEqual((self.w.state(cid), self.w.basis(cid)), ("UNRELATED", "NO_BRAND_MATCH"))
 
     def test_r6_variant(self):
-        self.fake("arbitrum", F3, "Arbitrum Bridged USDC (Arbitrum)", "USDC.E")
+        self.fake("arbitrum", F3, "Axelar Wrapped USDC", "axlUSDC")
         stub.MODEL.serve("VARIANT")
         cid = self.w.flag("arbitrum", F3, "usd-coin")
         self.assertEqual((self.w.state(cid), self.w.basis(cid)), ("VARIANT", "MODEL"))
@@ -336,30 +356,30 @@ class TestRules(Base):
         self.assertEqual((self.w.state(cid), self.w.basis(cid)), ("IMPERSONATOR", "MODEL"))
 
     def test_r6_prompt_inputs(self):
-        self.fake("arbitrum", F3, "Bridged USDC", "USDC.e")
+        self.fake("arbitrum", F3, "Axelar Wrapped USDC", "axlUSDC")
         stub.MODEL.serve("VARIANT")
         self.w.flag("arbitrum", F3, "usd-coin")
         p = stub.MODEL.prompts[0]
         data = json.loads(p.split("DATA:\n", 1)[1].split("\n", 1)[0])
         self.assertEqual(data["chain"], "arbitrum")
-        self.assertEqual(data["token_name_untrusted"], "Bridged USDC")
-        self.assertEqual(data["symbol_as_displayed"], "USDCE")
-        self.assertEqual(data["bridge_or_wrap_words_found"], [".E", "BRIDGED"])
+        self.assertEqual(data["token_name_untrusted"], "Axelar Wrapped USDC")
+        self.assertEqual(data["symbol_as_displayed"], "AXLUSDC")
+        self.assertEqual(data["bridge_or_wrap_words_found"], ["AXELAR"])
         self.assertEqual(data["coin_has_official_deployment_on_this_chain"], "yes")
         self.assertEqual(data["coin_symbol"], "USDC")
+        self.assertIn("do not copy the name or symbol of any token on that list", p)
 
     def test_r6_model_garbage_stays_pending(self):
-        self.fake("arbitrum", F3, "Bridged USDC", "USDC.e")
         for bad in [{"label": "SAFE"}, {"verdict": "VARIANT"}, "VARIANT", {"label": "VARIANT", "x": 1}]:
             w = World()
-            w.web.token("arbitrum", F3, "Bridged USDC", "USDC.e")
+            w.web.token("arbitrum", F3, "Axelar Wrapped USDC", "axlUSDC")
             stub.MODEL.serve_raw(bad)
             cid = w.flag("arbitrum", F3, "usd-coin")
             self.assertEqual(w.state(cid), "PENDING", repr(bad))
             self.assertEqual(w.case(cid)["history"], [])
 
     def test_r6_model_error_stays_pending(self):
-        self.fake("arbitrum", F3, "Bridged USDC", "USDC.e")
+        self.fake("arbitrum", F3, "Axelar Wrapped USDC", "axlUSDC")
         stub.MODEL.serve("VARIANT")
         stub.MODEL.fail(2)
         cid = self.w.flag("arbitrum", F3, "usd-coin")
@@ -389,12 +409,12 @@ class TestRules(Base):
         # Listed as USDC.e on Arbitrum does not help the same address elsewhere.
         self.fake("optimism", USDCE_ARB, "USDC", "USDC")
         cid = self.w.flag("optimism", USDCE_ARB, "usd-coin")
-        self.assertEqual(self.w.basis(cid), "EXACT_COPY")
+        self.assertEqual(self.w.basis(cid), "LISTED_COPY")
 
     def test_r2b_precedent_skips_listed(self):
         self.fake("arbitrum", F1, "USD Coin (Arb1)", "USDC")
         p = self.w.flag("arbitrum", F1, "usd-coin")
-        self.assertEqual(self.w.basis(p), "EXACT_COPY")
+        self.assertEqual(self.w.basis(p), "LISTED_COPY")
         self.fake("arbitrum", USDCE_ARB, "USD Coin (Arb1)", "USDC")
         out = json.loads(self.w.call(BOB, "flag_by_precedent", "arbitrum", [USDCE_ARB], p))
         self.assertEqual(out["skipped"][0]["reason"], "ON_LIST_AS_OTHER_ASSET")
@@ -415,7 +435,7 @@ class TestRules(Base):
             w = World()
             w.web.token("polygon", F2, sym, sym)
             cid = w.flag("polygon", F2, coin)
-            self.assertEqual(w.basis(cid), "EXACT_COPY", coin)
+            self.assertEqual(w.basis(cid), "LISTED_COPY", coin)
 
     def test_each_chain(self):
         for chain in LK.CHAIN_TABLE:
@@ -506,18 +526,15 @@ class T3HomoglyphWithDisclosure(Base):
         self.fake("base", F1, "Stargate USDC", "US" + ZWSP + "DC")
         self.assertEqual(self.w.basis(self.w.flag("base", F1, "usd-coin")), "HOMOGLYPH")
 
-    def test_disguised_bridged_dot_e_goes_to_model_with_flag(self):
-        # Real Arbitrum shape: "Bridged USDC" / "USDC.e" with invisibles.
-        # Symbol skeleton is USDCE (not USDC), so rule 4 does not fire; the
-        # model is told the text hides characters.
+    def test_disguised_bridged_dot_e_is_homoglyph_by_code(self):
+        # Real Arbitrum shape (seed M3): 'Bridged USDC' / 'USDC.e' with invisibles.
+        # The symbol skeleton USDCE is a listed label; the disguise makes it HOMOGLYPH.
         self.fake("arbitrum", F1, "Br\u200cid\u206bg\u2064e\u206ad U\u2062S\u200bD\u2062C\u2060",
                   "U\u200cS\u200bDC\u2062.e\ufeff\ufeff")
-        stub.MODEL.serve("IMPERSONATOR")
+        stub.MODEL.serve("VARIANT")
         cid = self.w.flag("arbitrum", F1, "usd-coin")
-        data = json.loads(stub.MODEL.prompts[0].split("DATA:\n", 1)[1].split("\n", 1)[0])
-        self.assertEqual(data["hidden_or_lookalike_characters"], "yes")
-        self.assertEqual(self.w.basis(cid), "MODEL")
-
+        self.assertEqual((self.w.state(cid), self.w.basis(cid)), ("IMPERSONATOR", "HOMOGLYPH"))
+        self.assertEqual(stub.MODEL.calls, 0)
 
 class T4ForgedLeader(Base):
     def test_forged_name_rejected(self):
@@ -932,7 +949,7 @@ class T8RenameRecheck(Base):
         self.assertEqual(out, {"state": "UNRELATED", "changed": True, "basis": "NO_BRAND_MATCH"})
         c = self.w.case(cid)
         self.assertEqual([(h["label"], h["basis"]) for h in c["history"]],
-                         [("IMPERSONATOR", "EXACT_COPY"), ("UNRELATED", "NO_BRAND_MATCH")])
+                         [("IMPERSONATOR", "LISTED_COPY"), ("UNRELATED", "NO_BRAND_MATCH")])
         self.assertEqual(c["history"][0]["symbol_sha256"], LK._sha("USDC"))
         self.assertEqual(c["history"][1]["symbol_sha256"], LK._sha("HPTS"))
         self.assertEqual(c["symbol"], "HPTS")
@@ -965,7 +982,7 @@ class T8RenameRecheck(Base):
         self.fake("arbitrum", F1, "USDC", "USDC")
         cid = self.w.flag("arbitrum", F1, "usd-coin")
         self.w.advance(HOUR)
-        self.fake("arbitrum", F1, "Bridged USDC", "USDC.e")
+        self.fake("arbitrum", F1, "Axelar Wrapped USDC", "axlUSDC")
         stub.MODEL.serve_raw({"label": "maybe"})
         out = json.loads(self.w.call(BOB, "recheck", cid))
         self.assertEqual(out["state"], "IMPERSONATOR")
@@ -979,17 +996,17 @@ class T8RenameRecheck(Base):
         self.w.advance(HOUR)
         self.w.call(BOB, "recheck", child)
         c = self.w.case(child)
-        self.assertEqual((c["state"], c["basis"], c["root_case_id"]), ("IMPERSONATOR", "EXACT_COPY", 0))
-        self.assertEqual([h["basis"] for h in c["history"]], ["PRECEDENT", "EXACT_COPY"])
+        self.assertEqual((c["state"], c["basis"], c["root_case_id"]), ("IMPERSONATOR", "LISTED_COPY", 0))
+        self.assertEqual([h["basis"] for h in c["history"]], ["PRECEDENT", "LISTED_COPY"])
 
     def test_recheck_variant_to_impersonator(self):
-        self.fake("arbitrum", F1, "Bridged USDC", "USDC.e")
+        self.fake("arbitrum", F1, "Axelar Wrapped USDC", "axlUSDC")
         stub.MODEL.serve("VARIANT")
         cid = self.w.flag("arbitrum", F1, "usd-coin")
         self.w.advance(HOUR)
         self.fake("arbitrum", F1, "USD Coin", "USDC")
         out = json.loads(self.w.call(BOB, "recheck", cid))
-        self.assertEqual((out["state"], out["changed"]), ("IMPERSONATOR", True))
+        self.assertEqual((out["state"], out["changed"], out["basis"]), ("IMPERSONATOR", True, "LISTED_COPY"))
 
     def test_recheck_becomes_official(self):
         self.fake("base", F1, "USDC", "USDC")
@@ -1040,7 +1057,7 @@ class T10Injection(Base):
     def test_injection_with_exact_symbol_decided_by_code(self):
         self.fake("arbitrum", F1, self.INJ, "USDC")
         cid = self.w.flag("arbitrum", F1, "usd-coin")
-        self.assertEqual((self.w.state(cid), self.w.basis(cid)), ("IMPERSONATOR", "EXACT_COPY"))
+        self.assertEqual((self.w.state(cid), self.w.basis(cid)), ("IMPERSONATOR", "LISTED_COPY"))
         self.assertEqual(stub.MODEL.calls, 0)
 
     def test_injection_only_inside_data(self):
@@ -1071,13 +1088,12 @@ class T10Injection(Base):
         self.assertEqual(self.w.state(cid), "PENDING")
 
     def test_invisible_chars_escaped_in_prompt(self):
-        self.fake("arbitrum", F1, "Bridged U" + BOM + "SDC", "USDC.e")
+        self.fake("arbitrum", F1, "Axelar Wrapped U\ufeffSDC", "axlUSDC")
         stub.MODEL.serve("IMPERSONATOR")
         self.w.flag("arbitrum", F1, "usd-coin")
         p = stub.MODEL.prompts[0]
-        self.assertNotIn(BOM, p)
+        self.assertNotIn("\ufeff", p)
         self.assertIn("\\ufeff", p)
-
 
 class T11NoSafeWording(Base):
     WORDS = re.compile(r"\b(safe|safety|verified|verify|trusted|secure|legit)\b", re.I)
@@ -1193,25 +1209,30 @@ class TestCoverageGate(Base):
             self.w.call(ALICE, "flag", "base", F1, "tether")
         self.assertFalse(self.w.view("is_impersonator", "base", F1))
 
-    def test_rules_4_5_need_official_entry(self):
-        f = LK.text_facts("USDC", "USD\u0421", "usd-coin")
-        f.update({"type": "ERC-20", "decimals": "6"})
-        self.assertEqual(LK.decide(F1, f, [], None, 1, "usd-coin")["label"], "MODEL")
+    def test_listed_copy_needs_official_entry(self):
+        copy = {"field": "symbol", "label": "USDC", "from": {"source": "coin"}}
         g = LK.text_facts("USDC", "USDC", "usd-coin")
         g.update({"type": "ERC-20", "decimals": "6"})
-        self.assertEqual(LK.decide(F1, g, [], None, 1, "usd-coin")["label"], "MODEL")
-        self.assertEqual(LK.decide(F1, g, [USDC_ETH.lower()], None, 1, "usd-coin")["basis"], "EXACT_COPY")
-
+        self.assertEqual(LK.decide(F1, g, [], None, 1, "usd-coin", None, copy)["label"], "MODEL")
+        self.assertEqual(LK.decide(F1, g, [USDC_ETH.lower()], None, 1, "usd-coin", None, copy)["basis"],
+                         "LISTED_COPY")
 
 class TestChainEvidence(Base):
     """Hardening 1: name/symbol/decimals come from eth_call, not an explorer."""
 
     def test_bytes32_name(self):
         self.fake("ethereum", F1, "USDC", "USDC", bytes32=True)
-        self.assertEqual(self.w.basis(self.w.flag("ethereum", F1, "usd-coin")), "EXACT_COPY")
+        self.assertEqual(self.w.basis(self.w.flag("ethereum", F1, "usd-coin")), "LISTED_COPY")
 
-    def test_no_decimals_is_not_erc20(self):
+    def test_no_decimals_is_still_erc20(self):
+        # decimals() is optional in ERC-20 (hardening route F).
         self.fake("ethereum", F1, "USDC", "USDC", decimals=None)
+        c = self.w.case(self.w.flag("ethereum", F1, "usd-coin"))
+        self.assertEqual((c["state"], c["basis"], c["decimals"], c["token_type"]),
+                         ("IMPERSONATOR", "LISTED_COPY", None, "ERC-20"))
+
+    def test_no_total_supply_is_not_erc20(self):
+        self.fake("ethereum", F1, "USDC", "USDC", erc20=False)
         cid = self.w.flag("ethereum", F1, "usd-coin")
         self.assertEqual((self.w.state(cid), self.w.basis(cid)), ("UNRELATED", "NOT_ERC20"))
 
@@ -1221,14 +1242,20 @@ class TestChainEvidence(Base):
         self.fake("ethereum", F2, "USDC", "USDC", type_="ERC-1155")
         self.assertEqual(self.w.basis(self.w.flag("ethereum", F2, "usd-coin")), "NOT_ERC20")
 
-    def test_no_name_is_not_erc20(self):
-        self.web.chains["ethereum"].tokens[F1] = {"name": None, "symbol": "USDC", "type": "ERC-20",
+    def test_no_name_but_symbol_is_erc20(self):
+        self.web.chains["ethereum"].tokens[F1] = {"name": None, "symbol": "USDC", "type": "ERC-20", "erc20": True,
+                                                 "bytes32": False, "decimals": 6}
+        self.assertEqual(self.w.basis(self.w.flag("ethereum", F1, "usd-coin")), "LISTED_COPY")
+
+    def test_no_name_no_symbol_is_not_erc20(self):
+        self.web.chains["ethereum"].tokens[F1] = {"name": None, "symbol": None, "type": "ERC-20", "erc20": True,
                                                  "bytes32": False, "decimals": 6}
         self.assertEqual(self.w.basis(self.w.flag("ethereum", F1, "usd-coin")), "NOT_ERC20")
 
-    def test_decimals_over_255_not_erc20(self):
+    def test_decimals_over_255_stored_null(self):
         self.fake("ethereum", F1, "USDC", "USDC", decimals=256)
-        self.assertEqual(self.w.basis(self.w.flag("ethereum", F1, "usd-coin")), "NOT_ERC20")
+        c = self.w.case(self.w.flag("ethereum", F1, "usd-coin"))
+        self.assertEqual((c["basis"], c["decimals"]), ("LISTED_COPY", None))
 
     def test_one_batch_per_validator(self):
         self.fake("ethereum", F1, "USDC", "USDC")
@@ -1237,9 +1264,10 @@ class TestChainEvidence(Base):
 
     def test_request_is_the_expected_batch(self):
         body = json.loads(LK._rpc_batch(F1))
-        self.assertEqual([r["method"] for r in body], ["eth_getCode"] + ["eth_call"] * 5)
+        self.assertEqual([r["method"] for r in body], ["eth_getCode"] + ["eth_call"] * 7)
         self.assertEqual([r["params"][0]["data"][:10] for r in body[1:]],
-                         [LK.SEL_NAME, LK.SEL_SYMBOL, LK.SEL_DECIMALS, LK.SEL_SUPPORTS, LK.SEL_SUPPORTS])
+                         [LK.SEL_NAME, LK.SEL_SYMBOL, LK.SEL_DECIMALS, LK.SEL_TOTAL_SUPPLY,
+                          LK.SEL_BALANCE_OF_ZERO[:10], LK.SEL_SUPPORTS, LK.SEL_SUPPORTS])
 
     def test_full_string_skeleton_past_cap(self):
         # 200 filler characters, then the disguise: the display copy is cut at
@@ -1306,10 +1334,19 @@ class TestTextHardening(Base):
         self.assertEqual((self.w.state(cid), self.w.basis(cid)), ("IMPERSONATOR", "MODEL"))
         self.assertTrue(self.w.case(cid)["facts"]["unknown_chars"])
 
-    def test_emoji_blocks_exact_copy(self):
+    def test_emoji_does_not_hide_a_listed_copy(self):
+        # "USDC <rocket>" / "USDC": the symbol a wallet shows is exactly USDC.
         self.fake("arbitrum", F1, "USDC \U0001F680", "USDC")
-        stub.MODEL.serve("IMPERSONATOR")
-        self.assertEqual(self.w.basis(self.w.flag("arbitrum", F1, "usd-coin")), "MODEL")
+        self.assertEqual(self.w.basis(self.w.flag("arbitrum", F1, "usd-coin")), "LISTED_COPY")
+
+    def test_unknown_char_appended_to_a_label_is_still_a_copy(self):
+        # An unreadable character is dropped from the skeleton like punctuation,
+        # so it cannot be used to slip a listed label past the code.
+        self.fake("arbitrum", F1, "USDC \u054f\u054f", "USDC\u054f")
+        stub.MODEL.serve("VARIANT")
+        cid = self.w.flag("arbitrum", F1, "usd-coin")
+        self.assertEqual(self.w.basis(cid), "LISTED_COPY")
+        self.assertEqual(stub.MODEL.calls, 0)
 
     def test_digit_lookalike_goes_to_model(self):
         self.fake("arbitrum", F1, "U5D Coin", "U5DC")
@@ -1324,7 +1361,7 @@ class TestTextHardening(Base):
             f = LK.text_facts(sym, sym, "usd-coin")
             f.update({"type": "ERC-20", "decimals": "6"})
             self.assertNotIn(LK.decide(F1, f, [USDC_ETH.lower()], None, 1, "usd-coin")["basis"],
-                             ("HOMOGLYPH", "EXACT_COPY"), sym)
+                             ("HOMOGLYPH", "LISTED_COPY"), sym)
 
     def test_plain_unrelated_still_decided_by_code(self):
         self.fake("ethereum", F1, "Sky Dollar", "USDS")
@@ -1336,6 +1373,223 @@ class TestTextHardening(Base):
         h = self.w.case(cid)["history"][0]
         self.assertNotIn("name", h)
         self.assertNotIn("symbol", h)
+
+
+# =============================================================================
+# LISTED_COPY: escape routes A-G (real Arbitrum tokens in the docstrings)
+# =============================================================================
+
+ZWNJ = chr(0x200C)
+ZWSP = chr(0x200B)
+WJ = chr(0x2060)
+IT = chr(0x2062)
+BOM = chr(0xFEFF)
+CYR_IE = chr(0x0435)          # Cyrillic small ie, looks like Latin e
+TUGRIK = chr(0x20AE)           # looks like T
+
+POLYGON_USDCE = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"
+OP_USDCE = "0x7F5c764cBc14f9669B88837ca1490cCa17c31607"
+
+
+class _HoleBase(unittest.TestCase):
+    def setUp(self):
+        self.w = World()
+        self.web = self.w.web
+        # The list's own labels for the bridged USDC.e entries, as on tokens.uniswap.org.
+        for row in self.web.list_tokens:
+            if row["address"] == USDCE_ARB:
+                row["name"] = "Bridged USDC"
+        self.web.list_tokens += [
+            {"chainId": 137, "symbol": "USDC.e", "name": "USDCoin (PoS)", "address": POLYGON_USDCE, "decimals": 6},
+            {"chainId": 10, "symbol": "USDC.e", "name": "USDCoin (Bridged from Ethereum)", "address": OP_USDCE,
+             "decimals": 6},
+        ]
+        self.web.publish_list()
+        stub.MODEL.serve("VARIANT")
+
+    def judge(self, chain, token, name, symbol, coin="usd-coin", decimals="6", **kw):
+        self.web.token(chain, token, name, symbol, decimals, **kw)
+        cid = self.w.flag(chain, token, coin)
+        return cid, self.w.case(cid)
+
+    def assertCodeImpersonator(self, case):
+        self.assertEqual(case["state"], "IMPERSONATOR",
+                         "escaped as %s/%s" % (case["state"], case["basis"]))
+        self.assertNotEqual(case["basis"], "MODEL", "left to the model")
+        self.assertEqual(stub.MODEL.calls, 0, "the model was asked")
+
+
+class TestListedCopyHoles(_HoleBase):
+    """The seven escape routes found after seed M3 (routes A-G). Each failed
+    before the LISTED_COPY rule and the ERC-20 check change; each must now be
+    decided IMPERSONATOR by code with no model call."""
+
+    # --- route A: copy the list's own label for a listed variant ------------
+
+    def test_A1_copy_listed_variant_label_exactly(self):
+        """'Bridged USDC' / 'USDC.e' at an address that is not the listed one.
+        Real: arbitrum 0xe1De3977D7909499642fee317818Ae698C841079,
+        0xC79Ea482222e56C7976284649F4C4AB7720C271A, 0x9a678BEC1a1eeAABAd1A9e22E3716e0fc9Cc99F5."""
+        _, c = self.judge("arbitrum", F1, "Bridged USDC", "USDC.e")
+        self.assertCodeImpersonator(c)
+
+    def test_A2_copy_listed_variant_symbol_only(self):
+        """'USD Coin Bridged' / 'USDC.e'. Real: arbitrum 0x9559136B1069715CCCe06b59ed3B9874e1213169."""
+        _, c = self.judge("arbitrum", F1, "USD Coin Bridged", "USDC.e", decimals="18")
+        self.assertCodeImpersonator(c)
+
+    def test_A3_copy_another_chains_listed_label(self):
+        """Optimism's listed label 'USDCoin (Bridged from Ethereum)' / 'USDC.e', deployed at a
+        different Optimism address."""
+        _, c = self.judge("optimism", F1, "USDCoin (Bridged from Ethereum)", "USDC.e")
+        self.assertCodeImpersonator(c)
+
+    def test_A4_copy_listed_variant_label_on_a_chain_without_it(self):
+        """Arbitrum's listed label copied onto Base, where the list has no USDC.e at all."""
+        _, c = self.judge("base", F1, "Bridged USDC", "USDC.e")
+        self.assertCodeImpersonator(c)
+
+    # --- route B: copy the on-chain metadata of a listed variant -------------
+
+    def test_B1_copy_polygon_usdce_onchain_metadata(self):
+        """Polygon USDC.e says 'USD Coin (PoS)' / 'USDC' on chain. A copy at another Polygon
+        address shows 'USDC' in a wallet; the word PoS switches rule 5 off."""
+        _, c = self.judge("polygon", F1, "USD Coin (PoS)", "USDC")
+        self.assertCodeImpersonator(c)
+
+    # --- route C: coin symbol exactly + a disclosure word in the name --------
+
+    def test_C1_exact_symbol_bridge_word_in_name(self):
+        """'Lens Bridged USDC (Lens)' / 'USDC': a wallet shows USDC.
+        Real: arbitrum 0x091aF852874B4885F9D89cB6cC6A85538a4223fe,
+        0x0EDa1A5Aa9AB156604fE174A1a4505588ccE2E72 ('Zero Network Bridged USDC')."""
+        _, c = self.judge("arbitrum", F1, "Lens Bridged USDC (Lens)", "USDC", decimals="18")
+        self.assertCodeImpersonator(c)
+
+    def test_C2_each_short_disclosure_word(self):
+        """Any one of the 14 words, or none but '.e' in the NAME, unlocks the model for an
+        exact 'USDC' symbol."""
+        escaped = []
+        for word in ["HOP", "OFT", "POS", "PORTAL", "ACROSS", "CELER"]:
+            w = World()
+            w.web.token("arbitrum", F2, "USD Coin " + word.lower(), "USDC")
+            stub.MODEL.serve("VARIANT")
+            cid = w.flag("arbitrum", F2, "usd-coin")
+            if w.state(cid) != "IMPERSONATOR":
+                escaped.append(word)
+        self.assertEqual(escaped, [], "escaped with: %s" % escaped)
+
+    def test_C3_disclosure_word_past_the_display(self):
+        """'USD Coin' + 200 spaces + 'Bridged' / 'USDC': a wallet never shows the word."""
+        _, c = self.judge("arbitrum", F1, "USD Coin" + " " * 200 + "Bridged", "USDC")
+        self.assertCodeImpersonator(c)
+
+    # --- route D: copy the listed official symbol of a multi-symbol coin -----
+
+    def test_D1_copy_usdt0_on_arbitrum(self):
+        """'USDT0' / 'USDT0' on Arbitrum, where Tether's official entry IS 'USDT0'. Rule 5
+        compares only with 'USDT'. Real: arbitrum 0xcE0470d23Ea6c86A3dF9E1008aAbDfFAEeF8F2f0,
+        0x6f0a3Fc26f0C1Ae046746dC70aAc61e032d84B52."""
+        _, c = self.judge("arbitrum", F1, "USDT0", "USDT0", coin="tether", decimals="18")
+        self.assertCodeImpersonator(c)
+
+    def test_D2_copy_usdt0_with_tugrik(self):
+        """'Fake USD-Tugrik-0' / 'USDT0'. Real: arbitrum 0xE0FB0F453aBfbd74368074cf0291711FC82cBc07."""
+        _, c = self.judge("arbitrum", F1, "Fake USD" + TUGRIK + "0", "USDT0", coin="tether")
+        self.assertCodeImpersonator(c)
+
+    def test_D3_copy_usdt0_on_a_chain_listing_only_usdt(self):
+        """'USDT0' / 'USDT0' on Polygon: Tether's own omnichain symbol, not listed there."""
+        _, c = self.judge("polygon", F1, "USDT0", "USDT0", coin="tether")
+        self.assertCodeImpersonator(c)
+
+    # --- route E: a disguise next to a disclosure word -----------------------
+
+    def test_E1_seed_m3_shape(self):
+        """The seeded fake M3: 'Bridged USDC' / 'USDC.e' padded with invisible characters.
+        Real: arbitrum 0xE3F520d5C6f5421eE02160242f7a9e025d829E3e (ruled VARIANT twice on chain)."""
+        name = "Br" + ZWNJ + "idged U" + IT + "S" + ZWSP + "D" + IT + "C" + WJ
+        sym = "U" + ZWNJ + "S" + ZWSP + "DC" + IT + ".e" + BOM + BOM
+        _, c = self.judge("arbitrum", F1, name, sym)
+        self.assertCodeImpersonator(c)
+
+    def test_E2_cyrillic_e_in_dot_e_suffix(self):
+        """'Bridged USDC' / 'USDC.' + Cyrillic ie: the disclosure suffix itself is a homoglyph.
+        (With the name 'USD Coin' rule 4 already catches it through the name; see Controls.)"""
+        _, c = self.judge("arbitrum", F1, "Bridged USDC", "USDC." + CYR_IE)
+        self.assertCodeImpersonator(c)
+
+    # --- route F: drop decimals() and be 'not an ERC-20' ---------------------
+
+    def test_F1_no_decimals_brand_name_is_not_code_unrelated(self):
+        """'Bridged USDC' / 'Visit https://circle-v2.xyz to claim rewards' with no decimals():
+        ruled UNRELATED/NOT_ERC20 by code although a wallet shows it next to USDC.
+        Real: arbitrum 0x6aed705A1E8E7bE9A3965743CBDc35FC9252D17A."""
+        self.web.chains["arbitrum"].tokens[F1] = {
+            "name": "Bridged USDC", "symbol": "Visit https://circle-v2.xyz to claim rewards",
+            "type": "ERC-20", "bytes32": False, "decimals": None, "erc20": True}
+        cid = self.w.flag("arbitrum", F1, "usd-coin")
+        c = self.w.case(cid)
+        self.assertNotEqual((c["state"], c["basis"]), ("UNRELATED", "NOT_ERC20"))
+
+    # --- route G: once VARIANT, a campaign cannot be batch-flagged -----------
+
+    def test_G1_campaign_of_label_copies_via_precedent(self):
+        """Three byte-identical 'Bridged USDC' / 'USDC.e' copies (route A1). Flag one, then
+        batch the rest by precedent: needs the first to be IMPERSONATOR."""
+        for t in (F1, F2, F3):
+            self.web.token("arbitrum", t, "Bridged USDC", "USDC.e")
+        p = self.w.flag("arbitrum", F1, "usd-coin")
+        try:
+            out = json.loads(self.w.call(F1, "flag_by_precedent", "arbitrum", [F2, F3], p))
+        except stub.UserError as e:
+            self.fail("precedent refused: %s (first copy was ruled %s)" % (e, self.w.state(p)))
+        self.assertEqual(len(out["flagged"]), 2)
+
+
+class TestListedCopyControls(_HoleBase):
+    """Legitimate tokens the LISTED_COPY rule must not touch."""
+
+    def test_listed_arbitrum_usdce_stays_variant(self):
+        _, c = self.judge("arbitrum", USDCE_ARB, "USD Coin (Arb1)", "USDC")
+        self.assertEqual((c["state"], c["basis"]), ("VARIANT", "LISTED_VARIANT"))
+
+    def test_listed_polygon_usdce_stays_variant(self):
+        _, c = self.judge("polygon", POLYGON_USDCE, "USD Coin (PoS)", "USDC")
+        self.assertEqual((c["state"], c["basis"]), ("VARIANT", "LISTED_VARIANT"))
+
+    def test_listed_optimism_usdce_stays_variant(self):
+        _, c = self.judge("optimism", OP_USDCE, "USD Coin", "USDC")
+        self.assertEqual((c["state"], c["basis"]), ("VARIANT", "LISTED_VARIANT"))
+
+    def test_official_usdt0_arbitrum(self):
+        _, c = self.judge("arbitrum", USDT0_ARB, "USD" + TUGRIK + "0", "USD" + TUGRIK + "0", coin="tether")
+        self.assertEqual(c["state"], "OFFICIAL")
+
+    def test_official_usdc(self):
+        _, c = self.judge("ethereum", USDC_ETH, "USD Coin", "USDC")
+        self.assertEqual(c["state"], "OFFICIAL")
+        _, c = self.judge("arbitrum", USDC_ARB, "USD Coin", "USDC")
+        self.assertEqual(c["state"], "OFFICIAL")
+
+    def test_honest_vault_still_goes_to_model(self):
+        stub.MODEL.serve("UNRELATED")
+        _, c = self.judge("ethereum", F1, "Spark USDC Vault", "sUSDC", decimals="18")
+        self.assertEqual((c["state"], c["basis"]), ("UNRELATED", "MODEL"))
+
+    def test_dot_e_homoglyph_with_coin_name_is_caught(self):
+        _, c = self.judge("arbitrum", F1, "USD Coin", "USDC." + CYR_IE)
+        self.assertEqual((c["state"], c["basis"]), ("IMPERSONATOR", "HOMOGLYPH"))
+
+    def test_disclosure_word_itself_disguised_with_exact_symbol_is_caught(self):
+        _, c = self.judge("arbitrum", F1, "Br" + ZWSP + "idged USDC", "USDC")
+        self.assertEqual((c["state"], c["basis"]), ("IMPERSONATOR", "HOMOGLYPH"))
+
+    def test_unlisted_bridge_product_goes_to_model(self):
+        """axlUSDC is not on the list. A fake copy of it is byte-identical to the real one,
+        so no rule can separate them: both go to the model (see Undecidable below)."""
+        _, c = self.judge("arbitrum", F1, "Axelar Wrapped USDC", "axlUSDC")
+        self.assertEqual(c["basis"], "MODEL")
 
 
 # =============================================================================

@@ -37,21 +37,33 @@ const CANON = [
   ["C2", "flag", ["arbitrum", "0xdaECe7e93993394063a01BB39145A7d71d4df8f1", "usd-coin"], "IMPERSONATOR/HOMOGLYPH", "'U+FEFF SD Coin' / 'U+FEFF SDC': byte-order mark inside"],
   ["C3", "flag", ["arbitrum", "0x72224ea851b18d56065E7ebe355a246A66F5ce2E", "usd-coin"], "IMPERSONATOR/HOMOGLYPH", "'USD Coin' / 'U U+206F SD U+200D C'"],
   ["C4", "flag", ["arbitrum", "0x2790AfA96A254142a13C24A7BE2C35afC784b82a", "tether"], "IMPERSONATOR/HOMOGLYPH", "'Tet U+FEFF her USD' / 'U U+200C SDT'"],
-  ["C5", "flag", ["arbitrum", EXACT_ARB, "usd-coin"], "IMPERSONATOR/EXACT_COPY", "'USDC' / 'USDC', 6 decimals, not the official Arbitrum USDC"],
-  ["C6", "flag", ["arbitrum", "0x413f1661a78A9675C95E33D63b0c90DBD747c43B", "tether"], "IMPERSONATOR/EXACT_COPY", "'USDT' / 'USDT' on Arbitrum (the official Tether there is USDT0)"],
+  ["C5", "flag", ["arbitrum", EXACT_ARB, "usd-coin"], "IMPERSONATOR/LISTED_COPY", "'USDC' / 'USDC', 6 decimals, not the official Arbitrum USDC"],
+  ["C6", "flag", ["arbitrum", "0x413f1661a78A9675C95E33D63b0c90DBD747c43B", "tether"], "IMPERSONATOR/LISTED_COPY", "'USDT' / 'USDT' on Arbitrum (the official Tether there is USDT0)"],
   ["C7", "flag", ["ethereum", USDC_ETH, "usd-coin"], "OFFICIAL/OFFICIAL_LIST", "real USDC on Ethereum"],
   ["C8", "flag", ["arbitrum", "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8", "usd-coin"], "VARIANT/LISTED_VARIANT", "real bridged USDC.e: on chain it says 'USD Coin (Arb1)' / 'USDC'; the list carries this address as USDC.e 'Bridged USDC'"],
   ["C9", "flag", ["arbitrum", AXL_ARB, "usd-coin"], "VARIANT/MODEL", "'Axelar Wrapped USDC' / 'axlUSDC', not on the list"],
-  ["C10", "flag", ["ethereum", "0xdC035D45d973E3EC169d2276DDab16f1e407384F", "usd-coin"], "UNRELATED/NO_BRAND_MATCH", "Sky 'USDS Stablecoin' / 'USDS': a different dollar token"],
+  ["C10", "flag", ["ethereum", "0xdC035D45d973E3EC169d2276DDab16f1e407384F", "usd-coin"], "UNRELATED/LISTED_OTHER", "Sky 'USDS Stablecoin' / 'USDS': a different dollar token, on the list as USDS"],
   ["C11", "flag_by_precedent", ["arbitrum", ["0x293971FC9f23AddadfB5bE29a4542C0E2BF67ba8", "0x1C1dEB401E94f4826260Ca888E53180819449714", "0x755A31d5dDbF5Cb69B15d50a01a0ea1ae15Ce474", "0xCd5503c3718C2303Bf958538cF94FcB5606E4E01", "0x0dFCCeB1147e0Ff11a442602a245E34D2FEBC977"], "@C5"], "5 x IMPERSONATOR/PRECEDENT", "five more 'USDC' / 'USDC' / 6-decimal copies, byte-identical to C5"],
   ["C12", "flag", ["base", "0x07f3c9Ba9a0C06204C8489B62291d5B0e77615A1", "tether"], "refused: the official list does not cover this coin on this chain", "a 'Tether USD' copy on Base: the list has no Tether on Base, so the pair is refused"],
+  // Real tokens that escaped before the LISTED_COPY rule (routes A-G). Each is now IMPERSONATOR by code.
+  ["H1", "flag", ["arbitrum", "0xe1De3977D7909499642fee317818Ae698C841079", "usd-coin"], "IMPERSONATOR/LISTED_COPY", "route A: 'Bridged USDC' / 'USDC.e', the list's own label for USDC.e, at another address"],
+  ["H2", "flag_by_precedent", ["arbitrum", ["0xC79Ea482222e56C7976284649F4C4AB7720C271A", "0x9a678BEC1a1eeAABAd1A9e22E3716e0fc9Cc99F5"], "@H1"], "2 x IMPERSONATOR/PRECEDENT", "route A + G: two more byte-identical 'Bridged USDC' / 'USDC.e' copies, batched on H1"],
+  ["H3", "flag", ["arbitrum", "0x9559136B1069715CCCe06b59ed3B9874e1213169", "usd-coin"], "IMPERSONATOR/LISTED_COPY", "route A: 'USD Coin Bridged' / 'USDC.e'"],
+  ["H4", "flag", ["arbitrum", "0x091aF852874B4885F9D89cB6cC6A85538a4223fe", "usd-coin"], "IMPERSONATOR/LISTED_COPY", "route C: 'Lens Bridged USDC (Lens)' / 'USDC': a wallet shows USDC"],
+  ["H5", "flag", ["arbitrum", "0x0EDa1A5Aa9AB156604fE174A1a4505588ccE2E72", "usd-coin"], "IMPERSONATOR/LISTED_COPY", "route C: 'Zero Network Bridged USDC (Zero Network)' / 'USDC'"],
+  ["H6", "flag", ["arbitrum", "0xcE0470d23Ea6c86A3dF9E1008aAbDfFAEeF8F2f0", "tether"], "IMPERSONATOR/LISTED_COPY", "route D: 'USDT0' / 'USDT0', Tether's listed Arbitrum symbol, at another address"],
+  ["H7", "flag", ["arbitrum", "0x6f0a3Fc26f0C1Ae046746dC70aAc61e032d84B52", "tether"], "IMPERSONATOR/LISTED_COPY", "route D: another 'USDT0' / 'USDT0'"],
+  ["H8", "flag", ["arbitrum", "0xE0FB0F453aBfbd74368074cf0291711FC82cBc07", "tether"], "IMPERSONATOR/HOMOGLYPH", "route D: 'Fake USD(Tugrik)0' / 'USDT0'"],
+  ["H9", "flag", ["arbitrum", DISGUISED_BRIDGED, "usd-coin"], "IMPERSONATOR/HOMOGLYPH", "route E: seed M3, 'Bridged USDC' / 'USDC.e' padded with invisible characters"],
+  ["H10", "flag", ["arbitrum", "0x6aed705A1E8E7bE9A3965743CBDc35FC9252D17A", "usd-coin"], "IMPERSONATOR/LISTED_COPY", "route F: 'Bridged USDC' / 'Visit https://circle-v2.xyz to claim rewards', no decimals()"],
 ];
 
 // MODEL cases on DEMO, each judged twice (flag now, recheck after the cooldown).
 const MODEL_CASES = [
   ["M1", "arbitrum", AXL_ARB, "VARIANT/MODEL", "'Axelar Wrapped USDC' / 'axlUSDC'"],
   ["M2", "ethereum", SPARK_ETH, "UNRELATED/MODEL", "'Spark USDC Vault' / 'sUSDC'"],
-  ["M3", "arbitrum", DISGUISED_BRIDGED, "IMPERSONATOR/MODEL", "real fake: 'Bridged USDC' / 'USDC.e' padded with invisible characters"],
+  ["M3", "arbitrum", DISGUISED_BRIDGED, "IMPERSONATOR/HOMOGLYPH", "real fake: 'Bridged USDC' / 'USDC.e' padded with invisible characters (now decided by code, no model call)"],
+  ["M4", "arbitrum", "0xB67c014FA700E69681a673876eb8BAFAA36BFf71", "UNRELATED/MODEL", "'Hop USDC LP Token' / 'HOP-LP-USDC'"],
 ];
 
 const acc = accounts();
@@ -107,7 +119,7 @@ if (!process.argv.includes("--report")) {
   // DEMO first: its clocks run while CANONICAL is seeded.
   const D1 = await step("D1", "DEMO", "flag", ["base", USDC_ETH, "usd-coin"], "PENDING", "the Ethereum USDC address on Base: no contract there (eth_getCode is empty), so the evidence fails", flagCheck("DEMO", "base", USDC_ETH, "usd-coin"));
   await step("D2", "DEMO", "rule", [D1.case_id], "PENDING", "anyone retries before the 5-minute deadline; still no contract", async () => ({ actual: (await caseOf("DEMO", "base", USDC_ETH, "usd-coin")).state }));
-  const D3 = await step("D3", "DEMO", "flag", ["arbitrum", EXACT_ARB, "usd-coin"], "IMPERSONATOR/EXACT_COPY", "exact copy, to be rechecked", flagCheck("DEMO", "arbitrum", EXACT_ARB, "usd-coin"));
+  const D3 = await step("D3", "DEMO", "flag", ["arbitrum", EXACT_ARB, "usd-coin"], "IMPERSONATOR/LISTED_COPY", "exact copy, to be rechecked", flagCheck("DEMO", "arbitrum", EXACT_ARB, "usd-coin"));
   await step("D4", "DEMO", "recheck", [D3.case_id], "refused: recheck cooldown has not passed", "recheck right away", refusal);
   for (const [id, chain, tok, expected, note] of MODEL_CASES) {
     await step(id, "DEMO", "flag", [chain, tok, "usd-coin"], expected, `${note}: model run 1`, flagCheck("DEMO", chain, tok, "usd-coin"));
@@ -119,12 +131,14 @@ if (!process.argv.includes("--report")) {
     } else if (method === "flag") {
       await step(id, "CANONICAL", method, args, expected, note, flagCheck("CANONICAL", ...args));
     } else {
-      const pid = ev.steps[args[2].slice(1)].case_id;
+      const pstep = ev.steps[args[2].slice(1)];
+      const pid = pstep.case_id;
+      const pcoin = pstep.args[2];
       await step(id, "CANONICAL", method, [args[0], args[1], pid], expected, note, async (out) => {
         const r = returnedJson(out) ?? {};
         const states = [];
         for (const t of args[1]) {
-          const c = await caseOf("CANONICAL", args[0], t, "usd-coin");
+          const c = await caseOf("CANONICAL", args[0], t, pcoin);
           states.push({ token: t, case_id: c?.case_id, state: c?.state, basis: c?.basis, root_case_id: c?.root_case_id });
         }
         const ok = states.filter((s) => s.state === "IMPERSONATOR" && s.basis === "PRECEDENT").length;
@@ -145,7 +159,7 @@ if (!process.argv.includes("--report")) {
   // DEMO time-based paths.
   const d3 = await caseOf("DEMO", "arbitrum", EXACT_ARB, "usd-coin");
   await waitUntil(d3.ruled_at + 180 + 20, "the DEMO recheck cooldown");
-  await step("D5", "DEMO", "recheck", [D3.case_id], "IMPERSONATOR/EXACT_COPY", "after the 3-minute cooldown; history keeps the first ruling", async (out) => {
+  await step("D5", "DEMO", "recheck", [D3.case_id], "IMPERSONATOR/LISTED_COPY", "after the 3-minute cooldown; history keeps the first ruling", async (out) => {
     const c = await caseOf("DEMO", "arbitrum", EXACT_ARB, "usd-coin");
     return { result: returnedJson(out), history: c.history, case: c, actual: `${c.state}/${c.basis}` };
   });
@@ -156,7 +170,7 @@ if (!process.argv.includes("--report")) {
     if (c0.ruled_at) await waitUntil(c0.ruled_at + 180 + 20, `the ${id} recheck cooldown`);
     await step(`${id}r`, "DEMO", "recheck", [first.case_id], expected, `${note}: model run 2 (recheck)`, async (out) => {
       const c = await caseOf("DEMO", chain, tok, "usd-coin");
-      return { result: returnedJson(out), history: c.history, case: c, actual: `${c.state}/${c.basis}`, runs: c.history.map((h) => h.label) };
+      return { result: returnedJson(out), history: c.history, case: c, actual: `${c.state}/${c.basis}`, runs: c.history.map((h) => `${h.label}/${h.basis}`) };
     });
   }
   const d1 = JSON.parse(await at.DEMO.view("get_case", [D1.case_id]));
@@ -172,12 +186,13 @@ if (!process.argv.includes("--report")) {
 
 // --- docs/SEEDS.md ----------------------------------------------------------
 const scout = (chain, t) => (SCOUT[chain] ? `[${t}](${SCOUT[chain]}/token/${t})` : `\`${t}\``);
-const order = ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12", "S1", "S2", "S3", "C13", "S4",
-  "D1", "D2", "D3", "D4", "D5", "D6", "D7", "M1", "M2", "M3", "M1r", "M2r", "M3r"];
+const order = ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12",
+  "H1", "H2", "H3", "H4", "H5", "H6", "H7", "H8", "H9", "H10", "S1", "S2", "S3", "C13", "S4",
+  "D1", "D2", "D3", "D4", "D5", "D6", "D7", "M1", "M2", "M3", "M4", "M1r", "M2r", "M3r", "M4r"];
 const rows = order.filter((k) => ev.steps[k]).map((k) => {
   const s = ev.steps[k];
   const what = s.method === "flag" ? `flag ${s.args[0]} ${scout(s.args[0], s.args[1])} vs \`${s.args[2]}\``
-    : s.method === "flag_by_precedent" ? `flag_by_precedent (precedent case ${s.precedent_case_id}): ${s.args[1].map((t) => scout("arbitrum", t)).join(", ")}`
+    : s.method === "flag_by_precedent" ? `flag_by_precedent (precedent case ${s.precedent_case_id}): ${s.args[1].map((t) => scout(s.args[0], t)).join(", ")}`
     : s.method === "add_token" ? `Safelist.add_token ${s.args[0]} ${scout(s.args[0], s.args[1])}`
     : s.method === "prune" ? `Safelist.prune ${s.args[0]} ${scout(s.args[0], s.args[1])} (from ${s.signer})`
     : `${s.method}(case ${s.args[0]})`;
@@ -186,7 +201,7 @@ const rows = order.filter((k) => ev.steps[k]).map((k) => {
 });
 const mism = order.filter((k) => ev.steps[k] && !ev.steps[k].match).map((k) => `- ${k}: expected ${ev.steps[k].expected}, got ${ev.steps[k].actual}. ${ev.steps[k].why ?? ""}`);
 const d5 = ev.steps.D5;
-const modelRows = ["M1", "M2", "M3"].filter((k) => ev.steps[k]).map((k) => `| ${k} (case ${ev.steps[k].case_id}) | ${ev.steps[k].note.replace(": model run 1", "")} | ${ev.steps[k].actual} | ${ev.steps[`${k}r`]?.actual ?? "not run"} |`);
+const modelRows = ["M1", "M2", "M3", "M4"].filter((k) => ev.steps[k]).map((k) => `| ${k} (case ${ev.steps[k].case_id}) | ${ev.steps[k].note.replace(": model run 1", "")} | ${ev.steps[k].actual} | ${ev.steps[`${k}r`]?.actual ?? "not run"} |`);
 writeFileSync(new URL("../docs/SEEDS.md", import.meta.url), `# Seeds (studio-dev)
 
 Every row is a real transaction on real token data. Contracts: CANONICAL [\`${A.CANONICAL}\`](${X}/address/${A.CANONICAL}), DEMO [\`${A.DEMO}\`](${X}/address/${A.DEMO}), SAFELIST [\`${A.SAFELIST}\`](${X}/address/${A.SAFELIST}), deployed from commit \`${dep.commit}\`. Raw records (returned values, case JSON, history) are in [seed-evidence.json](seed-evidence.json). Token links go to each chain's explorer for people; the contract itself reads name, symbol and decimals with eth_call.
@@ -196,7 +211,7 @@ Every row is a real transaction on real token data. Contracts: CANONICAL [\`${A.
 ${rows.join("\n")}
 
 ${mism.length ? "## Did not match\n\n" + mism.join("\n") + "\n" : "All steps matched their expected outcome.\n"}
-${modelRows.length ? `## MODEL cases judged twice (DEMO)\n\nEach was flagged (model run 1, all validators asked the model and agreed on one label) and rechecked after the cooldown (model run 2).\n\n| Case | Token | Run 1 | Run 2 |\n|---|---|---|---|\n${modelRows.join("\n")}\n` : ""}
+${modelRows.length ? `## MODEL cases judged twice (DEMO)\n\nEach was flagged (run 1) and rechecked after the cooldown (run 2). In a MODEL run every validator asked the model itself and they had to agree on one label. M3 no longer reaches the model: the LISTED_COPY rule decides it by code.\n\n| Case | Token | Run 1 | Run 2 |\n|---|---|---|---|\n${modelRows.join("\n")}\n` : ""}
 ${d5?.history ? `## Recheck history (DEMO case ${d5.args[0]})\n\n| # | Label | Basis | At (unix) | Evidence sha256 |\n|---|---|---|---|---|\n${d5.history.map((h, i) => `| ${i + 1} | ${h.label} | ${h.basis} | ${h.at} | \`${h.evidence_sha256}\` |`).join("\n")}\n\nThe first ruling is kept, not overwritten.\n` : ""}
 ${ev.safelist_tokens ? `## Safelist after S1-S4\n\nListed:\n\n\`\`\`json\n${JSON.stringify(ev.safelist_tokens, null, 2)}\n\`\`\`\n\nPruned:\n\n\`\`\`json\n${JSON.stringify(ev.safelist_pruned ?? [], null, 2)}\n\`\`\`\n` : ""}
 ${ev.stats ? `## Stats after seeding\n\n\`\`\`json\n${JSON.stringify(ev.stats, null, 2)}\n\`\`\`\n` : ""}`);

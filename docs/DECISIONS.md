@@ -85,3 +85,18 @@ Hardening item 3.
 ## D15. What is stored
 
 Hardening item 4. Nothing the leader alone produced is stored: the evidence is the string every validator rebuilt and compared, and the model's only output is one of three labels. Case history stores labels, bases, times and hashes (sha256 of the evidence, name and symbol), not the token's text. The current evidence keeps a display copy of name and symbol, capped at 128 characters, so views can show them. It is JSON-escaped and was fetched by every validator.
+
+## D16. LISTED_COPY replaces EXACT_COPY and closes routes A-G
+
+After seed M3 (a real fake, `Bridged USDC` / `USDC.e` padded with invisible characters, ruled VARIANT twice by the model), seven escape routes were found and pinned by failing tests: copying a listed variant's label (A), copying a listed variant's on-chain metadata (B), adding a bridge word next to an exact symbol (C), copying Tether's listed `USDT0` (D), a disguise next to a bridge word (E), omitting `decimals()` (F), and precedent being unavailable for VARIANT-ruled copies (G). Real Arbitrum tokens used A, C, D, E and F.
+
+One code rule closes them:
+
+- **Definition.** IMPERSONATOR = presents as a listed token of this coin to a wallet user, and is not that listed address.
+- **Rule.** Listed labels are the symbol and name skeletons of every list entry, on any chain, whose symbol carries the coin as a word (plus the coin's own symbol, name and list symbols). A token whose symbol or name skeleton equals a label, and which is not a list entry on its own chain, is IMPERSONATOR (LISTED_COPY, or HOMOGLYPH if disguised). Bridge words do not exempt it.
+- **Where the rule is narrower than the brief.** Qualification is on the entry's **symbol**, not its name. Otherwise Tether Gold (`XAUT`) would become a Tether label and Celo's `Wrapped Bitcoin` / `BTC` would make every `BTC` token a WBTC impersonator (measured on the real list).
+- **Unreadable characters.** An unreadable character is dropped from the skeleton like punctuation, so `USDC` plus an Armenian letter is still a copy of `USDC`. Hiding a label behind one extra character does not reach the model.
+- **ERC-20 check (route F).** `decimals()` is optional in ERC-20. A token is ERC-20 when `totalSupply()` and `balanceOf(address(0))` return a uint256 and `name()` or `symbol()` returns text; missing decimals is stored as null. Precedent matching compares decimals including null.
+- **Precedent (route G).** LISTED_COPY and HOMOGLYPH rulings can be precedents, as MODEL IMPERSONATOR rulings already could. PRECEDENT and VARIANT still cannot.
+- **Accepted trade-off (owner's decision).** An unlisted legitimate bridge that reuses a listed label is ruled IMPERSONATOR, for example Wormhole's USDC `0x41f7B8b9b897276b7AAE926a9016935280b44E97` on Ethereum. `recheck` clears it if the list adds it.
+- **The model** now only sees names that carry the brand but copy no listed label.

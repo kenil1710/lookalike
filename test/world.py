@@ -97,7 +97,23 @@ def default_list():
         (10, "WBTC", "0x68f180fcCe6836688e9084f035309E29Bf0A2095"),
         (137, "WBTC", "0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6"),
     ]
-    out = [{"chainId": c, "symbol": s, "address": a, "name": s, "decimals": 6} for c, s, a in rows]
+    names = {"USDC": "USDCoin", "USDC.e": "Bridged USDC", "USDT": "Tether USD", "USDT0": "USDT0",
+             "WETH": "Wrapped Ether", "DAI": "Dai Stablecoin", "WBTC": "Wrapped BTC"}
+    out = [{"chainId": c, "symbol": s, "address": a, "name": names[s], "decimals": 6} for c, s, a in rows]
+    # real bridged USDC.e entries with their list names, and Tether Gold (a
+    # Tether-branded product that is NOT Tether)
+    out += [
+        {"chainId": 137, "symbol": "USDC.e", "name": "USDCoin (PoS)",
+         "address": "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", "decimals": 6},
+        {"chainId": 10, "symbol": "USDC.e", "name": "USDCoin (Bridged from Ethereum)",
+         "address": "0x7F5c764cBc14f9669B88837ca1490cCa17c31607", "decimals": 6},
+        {"chainId": 10, "symbol": "USDT0", "name": "USDT0",
+         "address": "0x01bFF41798a0BcF287b996046Ca68b395DbC1071", "decimals": 6},
+        {"chainId": 1, "symbol": "XAUT", "name": "Tether Gold",
+         "address": "0x68749665FF8D2d112Fa859AA293F07A622782F38", "decimals": 6},
+        {"chainId": 42220, "symbol": "BTC", "name": "Wrapped Bitcoin",
+         "address": "0x" + "c" * 40, "decimals": 8},
+    ]
     # padding: a real list has ~1700 entries; the contract refuses a list under 100
     out += [{"chainId": 999, "symbol": "PAD%d" % i, "address": "0x" + "%040x" % (i + 1), "name": "pad",
              "decimals": 18} for i in range(120)]
@@ -164,6 +180,10 @@ class Chain:
             res = abi_bytes32(t["symbol"]) if t["bytes32"] else abi_string(t["symbol"])
         elif sel == LK.SEL_DECIMALS and t["decimals"] is not None:
             res = abi_uint(t["decimals"])
+        elif sel == LK.SEL_TOTAL_SUPPLY and t["erc20"]:
+            res = abi_uint(10 ** 24)
+        elif data == LK.SEL_BALANCE_OF_ZERO and t["erc20"]:
+            res = abi_uint(0)
         elif sel == LK.SEL_SUPPORTS:
             iface = data[10:18]
             if t["type"] == "ERC-721" and iface == LK.IFACE_ERC721:
@@ -192,12 +212,13 @@ class Web:
             body = json.dumps({"name": "Uniswap Labs Default", "tokens": self.list_tokens})
         stub.WEB[LIST_URL] = (200, body)
 
-    def token(self, chain, token, name, symbol, decimals="6", type_="ERC-20", bytes32=False):
+    def token(self, chain, token, name, symbol, decimals="6", type_="ERC-20", bytes32=False, erc20=True):
         if type_ in ("ERC-721", "ERC-1155"):
             decimals = None
+            erc20 = False
         self.chains[chain].transport_error.discard(token.lower())
         self.chains[chain].tokens[token.lower()] = {
-            "name": name, "symbol": symbol, "type": type_, "bytes32": bytes32,
+            "name": name, "symbol": symbol, "type": type_, "bytes32": bytes32, "erc20": erc20,
             "decimals": None if decimals is None else int(decimals)}
 
     def down_token(self, chain, token):

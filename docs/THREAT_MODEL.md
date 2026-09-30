@@ -76,6 +76,27 @@ Arbitrum's USDC.e returns `USD Coin (Arb1)` / `USDC` from `name()`/`symbol()`. T
 
 HTTP errors, HTML, a non-batch reply, a missing reply, a node error (not a revert), no contract at the address, or an EIP-7702 delegated account: all evidence failures. Reverts are facts (NOT_ERC20). A leader that upgrades an NFT to ERC-20 or invents a list match is outvoted, because validators rebuild the evidence themselves.
 
+## T10d. A fake borrows a listed label  [`TestListedCopyHoles`, `TestListedCopyControls`]
+
+The seven escape routes (A-G) found after seed M3, each pinned by a test using the shape of a real Arbitrum token:
+
+- **A.** Copy the list's label for a listed variant (`Bridged USDC` / `USDC.e`) at another address, on the same chain or another chain.
+- **B.** Copy a listed variant's on-chain metadata (`USD Coin (PoS)` / `USDC`).
+- **C.** Exact `USDC` symbol plus any bridge word in the name, even past what a wallet displays.
+- **D.** Copy Tether's listed `USDT0`, plain or with a Tugrik sign.
+- **E.** Hidden characters next to a bridge word.
+- **F.** Omit `decimals()` to look like a non-token.
+- **G.** A campaign of identical copies cannot be batch-flagged.
+
+*Defence:*
+- The LISTED_COPY rule (DECISIONS D16): a symbol or name skeleton equal to any listed label of the coin, on a token that is not a list entry on its own chain, is IMPERSONATOR by code, with no model call.
+- ERC-20 is judged on `totalSupply()` and `balanceOf(0)`, so `decimals()` is optional.
+- LISTED_COPY and HOMOGLYPH rulings are valid precedents.
+
+The controls keep the real listed USDC.e on Arbitrum, Polygon and Optimism VARIANT, official USDC and USDT0 OFFICIAL, and honest unlisted products (`Spark USDC Vault`, `axlUSDC`) with the model.
+
+*Residual:* a fake of a product the list does not carry (a fake axlUSDC) produces the same evidence as the real one; see Known limits in the README.
+
 ## T11. The register is read as a safety badge  [`T11NoSafeWording`]
 
 No view, config or source line uses "safe", "verified", "trusted", "secure" or "legit". OFFICIAL is always explained as "on the Uniswap default token list for this chain under the coin's symbol at ruled_at". There is no money, no owner and no setter in the register.
