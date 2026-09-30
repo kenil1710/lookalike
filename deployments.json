@@ -1,0 +1,53 @@
+{
+  "network": "studio-dev",
+  "chain_id": 61997,
+  "rpc": "https://studio-dev.genlayer.com/api",
+  "explorer": "https://explorer-studio-dev.genlayer.com/",
+  "commit": "371643122632332d289a12356481a46bf524aef0",
+  "contracts": {
+    "CANONICAL": {
+      "address": "0x0B448534e504B7d5D0ABfB89e7c57A290D80e705",
+      "deploy_tx": "0x0de9dbda70ce7d7b35a614fa863702094a3e38af16fdcc34751a62b755c9f1a6",
+      "file": "contracts/lookalike.py",
+      "label": "canonical register: rule window 6 h, recheck cooldown 1 h",
+      "constructor_args": [
+        "21600",
+        "3600"
+      ],
+      "source_bytes": 46636,
+      "source_sha256": "a7a3a07609e4685637a4152c8dbe7bcd92cfa15e02d975cc668d6a9c330329f1",
+      "commit": "371643122632332d289a12356481a46bf524aef0",
+      "deployer": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+      "deployed_at": "2026-09-30T08:08:17.595Z"
+    },
+    "DEMO": {
+      "address": "0xe57c00C57372B7E88a9C485C323b6296a6Cbfd7a",
+      "deploy_tx": "0x1828af3972dc37350a63d459ba44e13de92cd966c63e5825cf1f94ac12eb19ac",
+      "file": "contracts/lookalike.py",
+      "label": "demo register (time-based paths): rule window 5 min, recheck cooldown 3 min",
+      "constructor_args": [
+        "300",
+        "180"
+      ],
+      "source_bytes": 46636,
+      "source_sha256": "a7a3a07609e4685637a4152c8dbe7bcd92cfa15e02d975cc668d6a9c330329f1",
+      "commit": "371643122632332d289a12356481a46bf524aef0",
+      "deployer": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+      "deployed_at": "2026-09-30T08:08:27.181Z"
+    },
+    "SAFELIST": {
+      "address": "0xc70C20F28d125e318BCAD28dBD84d51d8DBADa2A",
+      "deploy_tx": "0xdd591b08a878759abc7d0089e4a3fc9c6022c95af9523b0fe4c1275c2ac2b839",
+      "file": "contracts/safelist.py",
+      "label": "consumer token list, reads CANONICAL",
+      "constructor_args": [
+        "0x0B448534e504B7d5D0ABfB89e7c57A290D80e705"
+      ],
+      "source_bytes": 3874,
+      "source_sha256": "f3d3a3f6d5dadd1068c0d82092edfdc0be6b412e8ff343fcee2c6c8f9527c3be",
+      "commit": "371643122632332d289a12356481a46bf524aef0",
+      "deployer": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+      "deployed_at": "2026-09-30T08:08:33.094Z"
+    }
+  }
+}

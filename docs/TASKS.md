@@ -56,5 +56,5 @@ Status legend: [ ] todo · [~] in progress · [x] done · [!] blocked (reason in
 - [x] precedent accepts LISTED_COPY / HOMOGLYPH
 - [x] all 15 hole tests + 9 controls pass; merged into test_logic.py; full suite passes
 - [x] dry run with live RPC + live list on every seed token
-- [ ] redeploy CANONICAL, DEMO, SAFELIST from the new HEAD; reseed incl. hole tokens; M1-M4 twice
-- [ ] verify_source; README, ADDRESSES.md, SEEDS.md; push
+- [x] redeploy CANONICAL, DEMO, SAFELIST from 3716431; reseed incl. hole tokens (H1-H10); M1-M4 twice, all runs agree
+- [x] verify_source; README, ADDRESSES.md, SEEDS.md; push
