@@ -24,11 +24,11 @@ Status legend: [ ] todo · [~] in progress · [x] done · [!] blocked (reason in
 - [x] smoke deploy on studio-dev from the working copy (cross-contract spelling fixed: gl.contract.interface)
 
 ## Step 3 - deploy + seeds
-- [ ] commit, deploy CANONICAL + DEMO + SAFELIST from HEAD, ADDRESSES.md
-- [ ] CANONICAL seeds: fakes -> IMPERSONATOR, USDC -> OFFICIAL, USDC.e -> VARIANT, USDS -> UNRELATED, precedent batch, safelist add/refuse
-- [ ] DEMO seeds: PENDING -> expire -> EXPIRED -> re-flag; recheck after cooldown with history
-- [ ] docs/SEEDS.md
+- [x] commit, deploy CANONICAL + DEMO + SAFELIST from HEAD, ADDRESSES.md (on-chain source = HEAD, test/verify_onchain.mjs)
+- [x] CANONICAL seeds: fakes -> IMPERSONATOR, USDC -> OFFICIAL, USDC.e -> VARIANT, USDS -> UNRELATED, precedent batch, safelist add/refuse
+- [x] DEMO seeds: PENDING -> expire -> EXPIRED -> re-flag; recheck after cooldown with history
+- [x] docs/SEEDS.md
 
 ## Step 4 - README + push
-- [ ] README
+- [x] README
 - [ ] push to github.com/kenil1710/lookalike; deployed file byte-identical to pushed HEAD
