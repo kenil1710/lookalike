@@ -31,4 +31,4 @@ Status legend: [ ] todo · [~] in progress · [x] done · [!] blocked (reason in
 
 ## Step 4 - README + push
 - [x] README
-- [ ] push to github.com/kenil1710/lookalike; deployed file byte-identical to pushed HEAD
+- [x] push to github.com/kenil1710/lookalike; deployed file byte-identical to pushed HEAD (verify_onchain.mjs --ref=origin/main)
