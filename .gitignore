@@ -7,3 +7,7 @@ scratch/
 test/probe_lookalike.py
 test/probe_lookalike.mjs
 scratch-probe.log
+.env
+*.keystore
+keystores/
+*.pem

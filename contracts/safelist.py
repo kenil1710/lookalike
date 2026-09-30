@@ -13,6 +13,10 @@ import typing
 # cross-contract view and refuses the token if the register rules it an
 # IMPERSONATOR of any coin. The Lookalike address is fixed in the constructor.
 # Only the curator (the deployer) adds tokens; a refusal changes nothing.
+#
+# A token can be ruled an impersonator AFTER it was listed. prune(chain,
+# token) is open to anyone: it removes a listed token if, and only if, the
+# register rules it an IMPERSONATOR now.
 
 
 @gl.contract.interface
@@ -33,6 +37,7 @@ class Entry:
     chain: str
     token: str
     added_at: str
+    removed_at: str
 
 
 class Safelist(gl.contract.Contract):
@@ -61,13 +66,35 @@ class Safelist(gl.contract.Contract):
         e.chain = str(chain)
         e.token = t
         e.added_at = str(gl.message.raw.get("datetime", ""))
+        e.removed_at = ""
         self.listed[key] = True
         return json.dumps({"added": True, "chain": str(chain), "token": t}, sort_keys=True)
+
+    @gl.public.write
+    def prune(self, chain: str, token: str) -> str:
+        t = str(token).strip().lower()
+        key = str(chain) + "|" + t
+        if not self.listed.get(key, False):
+            raise gl.vm.UserError("not listed")
+        if not ILookalike(self.register).view().is_impersonator(chain, t):
+            raise gl.vm.UserError("Lookalike does not rule " + t + " on " + str(chain)
+                                  + " an IMPERSONATOR; nothing to prune")
+        for e in self.entries:
+            if str(e.chain) == str(chain) and str(e.token) == t and str(e.removed_at) == "":
+                e.removed_at = str(gl.message.raw.get("datetime", ""))
+        self.listed[key] = False
+        return json.dumps({"pruned": True, "chain": str(chain), "token": t}, sort_keys=True)
 
     @gl.public.view
     def list_tokens(self) -> str:
         return json.dumps([{"chain": str(e.chain), "token": str(e.token), "added_at": str(e.added_at)}
-                           for e in self.entries], sort_keys=True)
+                           for e in self.entries if str(e.removed_at) == ""], sort_keys=True)
+
+    @gl.public.view
+    def list_pruned(self) -> str:
+        return json.dumps([{"chain": str(e.chain), "token": str(e.token), "added_at": str(e.added_at),
+                            "removed_at": str(e.removed_at)}
+                           for e in self.entries if str(e.removed_at) != ""], sort_keys=True)
 
     @gl.public.view
     def get_register(self) -> str:

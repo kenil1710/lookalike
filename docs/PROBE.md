@@ -35,4 +35,25 @@ Other things measured along the way:
 
 `usd-coin` (usdc, "USDC"), `tether` (usdt, "Tether"), `weth` (weth, "WETH"), `dai` (dai, "Dai") returned 200. `wrapped-bitcoin` and `ethena-usde` could not be checked: 429. CoinGecko platform ids: `ethereum`, `base`, `arbitrum-one`, `optimistic-ethereum`, `polygon-pos`.
 
+
+## Round 2: evidence from the chain itself (hardening)
+
+Probe contract `0xc045a265cDdfCb5f567a61e321b2Bda842D65E44`. Each validator POSTs one JSON-RPC batch (`eth_getCode`, `name()`, `symbol()`, `decimals()`) with `gl.nondet.web.request(url, method="POST", body=..., headers={"Content-Type": "application/json"})`; the validator re-sends the batch and must receive the same status and body.
+
+| Endpoint | Result | Tx |
+|---|---|---|
+| ethereum-rpc.publicnode.com, USDC `0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48` | 200, batch of 4 answers, validators agreed | [0x870fdf1e308923f596f296855ec8f1fd3824f5eaab6533f71854e936ca9ddb26](https://explorer-studio-dev.genlayer.com/tx/0x870fdf1e308923f596f296855ec8f1fd3824f5eaab6533f71854e936ca9ddb26) |
+| base-rpc.publicnode.com, Base USDC `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` | 200, batch of 4 answers, validators agreed | [0xfcd7aa4f19197b6e62069d674df247e267b6e66d3392eeedaaa5f51c3e7c145a](https://explorer-studio-dev.genlayer.com/tx/0xfcd7aa4f19197b6e62069d674df247e267b6e66d3392eeedaaa5f51c3e7c145a) |
+| arbitrum-one-rpc.publicnode.com, a real disguised fake `0xEbb993F7C5477016A0a025A790Dd079dfe3Eca9D` | 200, batch of 4 answers, validators agreed | [0xf45a3c06f74548f42f43d8e62ac8dbadae45698fb1c72772b1ebb6dcb7dac2fa](https://explorer-studio-dev.genlayer.com/tx/0xf45a3c06f74548f42f43d8e62ac8dbadae45698fb1c72772b1ebb6dcb7dac2fa) |
+| optimism-rpc.publicnode.com, OP USDC `0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85` | 200, batch of 4 answers, validators agreed | [0x5e3410f85e2e799a65ab52762a09e59bcd1e3a1ef6649e349e73e988d5b5e1a7](https://explorer-studio-dev.genlayer.com/tx/0x5e3410f85e2e799a65ab52762a09e59bcd1e3a1ef6649e349e73e988d5b5e1a7) |
+| polygon-bor-rpc.publicnode.com, Polygon USDC `0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359` | 200, batch of 4 answers, validators agreed | [0x78e45fbe5c07c774a2dc58034790bba07f387cc65b2f4df49e1ff9f88b819931](https://explorer-studio-dev.genlayer.com/tx/0x78e45fbe5c07c774a2dc58034790bba07f387cc65b2f4df49e1ff9f88b819931) |
+| ethereum-rpc.publicnode.com, an account (`0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045`) | `eth_getCode` = `0xef0100…` (an EIP-7702 delegation, not a token), every `eth_call` = `0x` | [0x57ff2afb9c7ec0e5fec999106b481e67c96ee0ed35dc45c3225056b2f94bb041](https://explorer-studio-dev.genlayer.com/tx/0x57ff2afb9c7ec0e5fec999106b481e67c96ee0ed35dc45c3225056b2f94bb041) |
+| tokens.uniswap.org again | 200, 667,462 characters read inside GenVM; the server sends `content-length: 667466` bytes (the difference is multi-byte UTF-8 characters), so the body arrives whole | [0xf81512e1f07ff0dcc952aff88b5f12584a2c03a59322f103cbdf2992cd9c7cb7](https://explorer-studio-dev.genlayer.com/tx/0xf81512e1f07ff0dcc952aff88b5f12584a2c03a59322f103cbdf2992cd9c7cb7) |
+
+Other keyless endpoints tried from a laptop: `eth.drpc.org`, `1rpc.io/eth`, `mainnet.base.org`, `arb1.arbitrum.io/rpc`, `mainnet.optimism.io` answer; `rpc.ankr.com/eth` now needs a key; `polygon-rpc.com` answers 403; `cloudflare-eth.com` refuses `eth_call`. publicnode serves all five chains with one pattern, so it is the one frozen in the contract.
+
+What the chain says differs from Blockscout's metadata, and that matters. Arbitrum's bridged USDC.e (`0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8`) returns `name() = "USD Coin (Arb1)"`, `symbol() = "USDC"`. Blockscout shows `Arbitrum Bridged USDC (Arbitrum)` / `USDC.E`, which is Blockscout's own label. Polygon's USDC.e returns `USD Coin (PoS)` / `USDC`. See DECISIONS D11.
+
+Smoke deploy of the hardened contract (scratch instance `0x0E1f93c8EcAE57a2365E9BC49D75C4Ca33a12DD8`, not a submission): C1-style disguised fake -> HOMOGLYPH, exact copy -> EXACT_COPY, USDC.e -> VARIANT/LISTED_VARIANT, axlUSDC -> VARIANT/MODEL, no contract -> PENDING, Tether on Base -> refused by the coverage gate, precedent batch, Safelist prune refused before the ruling and accepted after it.
+
 Consequences are in [DECISIONS.md](DECISIONS.md).

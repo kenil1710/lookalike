@@ -1,4 +1,4 @@
-"""Test world for Lookalike: a fake Blockscout, a fake official list, a clock,
+"""Test world for Lookalike: fake JSON-RPC chains, a fake official list, a clock,
 actors, and the register's bookkeeping invariants asserted after EVERY call.
 
 Token names used here are copied from real impersonators found on Arbitrum,
@@ -56,7 +56,7 @@ F5 = "0x" + "5" * 40
 F6 = "0x" + "6" * 40
 F7 = "0x" + "7" * 40
 
-EXPLORER = {k: v[0] for k, v in LK.CHAIN_TABLE.items()}
+RPC_URL = {k: v[0] for k, v in LK.CHAIN_TABLE.items()}
 CHAIN_ID = {k: v[1] for k, v in LK.CHAIN_TABLE.items()}
 
 
@@ -77,23 +77,113 @@ def iso(epoch: int) -> str:
     return "%04d-%02d-%02dT%02d:%02d:%02dZ" % (y, m, d, h, mi, s)
 
 
-def token_url(chain, token):
-    return EXPLORER[chain] + "/api/v2/tokens/" + token.lower()
-
-
 def default_list():
     rows = [
         (1, "USDC", USDC_ETH), (42161, "USDC", USDC_ARB), (8453, "USDC", USDC_BASE),
+        (10, "USDC", "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85"),
+        (137, "USDC", "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359"),
         (42161, "USDC.e", USDCE_ARB), (1, "USDT", USDT_ETH), (42161, "USDT0", USDT0_ARB),
-        (1, "WETH", WETH_ETH), (1, "DAI", DAI_ETH), (1, "WBTC", WBTC_ETH),
+        (10, "USDT", "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58"),
+        (137, "USDT", "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"),
+        (1, "WETH", WETH_ETH), (8453, "WETH", "0x4200000000000000000000000000000000000006"),
+        (10, "WETH", "0x4200000000000000000000000000000000000006"),
+        (42161, "WETH", "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1"),
+        (137, "WETH", "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619"),
+        (1, "DAI", DAI_ETH), (8453, "DAI", "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb"),
+        (42161, "DAI", "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"),
+        (10, "DAI", "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"),
+        (137, "DAI", "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063"),
+        (1, "WBTC", WBTC_ETH), (42161, "WBTC", "0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f"),
+        (10, "WBTC", "0x68f180fcCe6836688e9084f035309E29Bf0A2095"),
+        (137, "WBTC", "0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6"),
     ]
-    return [{"chainId": c, "symbol": s, "address": a, "name": s, "decimals": 6} for c, s, a in rows]
+    out = [{"chainId": c, "symbol": s, "address": a, "name": s, "decimals": 6} for c, s, a in rows]
+    # padding: a real list has ~1700 entries; the contract refuses a list under 100
+    out += [{"chainId": 999, "symbol": "PAD%d" % i, "address": "0x" + "%040x" % (i + 1), "name": "pad",
+             "decimals": 18} for i in range(120)]
+    return out
+
+
+def abi_string(text):
+    raw = text.encode("utf-8")
+    n = len(raw)
+    padded = raw + b"\x00" * ((32 - n % 32) % 32)
+    return "0x" + (32).to_bytes(32, "big").hex() + n.to_bytes(32, "big").hex() + padded.hex()
+
+
+def abi_bytes32(text):
+    raw = text.encode("utf-8")[:32]
+    return "0x" + (raw + b"\x00" * (32 - len(raw))).hex()
+
+
+def abi_uint(v):
+    return "0x" + int(v).to_bytes(32, "big").hex()
+
+
+REVERT = {"code": 3, "message": "execution reverted"}
+
+
+class Chain:
+    """One chain's JSON-RPC endpoint as the validators see it."""
+
+    def __init__(self, name):
+        self.name = name
+        self.tokens = {}         # lower address -> dict
+        self.status = 200
+        self.raw_body = None
+        self.transport_error = set()   # tokens whose calls fail with a node error
+        self.queue = []          # one-shot overrides: callable(body) -> (status, body)
+        self.requests = 0
+
+    def __call__(self, body):
+        self.requests += 1
+        if self.queue:
+            return self.queue.pop(0)(body)
+        if self.status != 200:
+            return (self.status, "<html>bad gateway</html>")
+        if self.raw_body is not None:
+            return (200, self.raw_body)
+        reqs = json.loads(body)
+        return (200, json.dumps([self.answer(r) for r in reqs]))
+
+    def answer(self, r):
+        token = r["params"][0] if r["method"] == "eth_getCode" else r["params"][0]["to"]
+        t = self.tokens.get(token.lower())
+        if token.lower() in self.transport_error:
+            return {"jsonrpc": "2.0", "id": r["id"], "error": {"code": -32603, "message": "upstream timeout"}}
+        if r["method"] == "eth_getCode":
+            return {"jsonrpc": "2.0", "id": r["id"], "result": "0x6080604052" if t else "0x"}
+        if t is None:
+            return {"jsonrpc": "2.0", "id": r["id"], "result": "0x"}
+        data = r["params"][0]["data"]
+        sel = data[:10]
+        res = None
+        if sel == LK.SEL_NAME and t["name"] is not None:
+            res = abi_bytes32(t["name"]) if t["bytes32"] else abi_string(t["name"])
+        elif sel == LK.SEL_SYMBOL and t["symbol"] is not None:
+            res = abi_bytes32(t["symbol"]) if t["bytes32"] else abi_string(t["symbol"])
+        elif sel == LK.SEL_DECIMALS and t["decimals"] is not None:
+            res = abi_uint(t["decimals"])
+        elif sel == LK.SEL_SUPPORTS:
+            iface = data[10:18]
+            if t["type"] == "ERC-721" and iface == LK.IFACE_ERC721:
+                res = abi_uint(1)
+            elif t["type"] == "ERC-1155" and iface == LK.IFACE_ERC1155:
+                res = abi_uint(1)
+            elif t["type"] in ("ERC-721", "ERC-1155"):
+                res = abi_uint(0)
+        if res is None:
+            return {"jsonrpc": "2.0", "id": r["id"], "error": dict(REVERT)}
+        return {"jsonrpc": "2.0", "id": r["id"], "result": res}
 
 
 class Web:
-    """Blockscout and the official list, as the validators see them."""
+    """The five chains and the official list, as the validators see them."""
 
     def __init__(self):
+        self.chains = {c: Chain(c) for c in RPC_URL}
+        for c, url in RPC_URL.items():
+            stub.RPC[url] = self.chains[c]
         self.list_tokens = default_list()
         self.publish_list()
 
@@ -102,25 +192,31 @@ class Web:
             body = json.dumps({"name": "Uniswap Labs Default", "tokens": self.list_tokens})
         stub.WEB[LIST_URL] = (200, body)
 
-    def token(self, chain, token, name, symbol, decimals="6", type_="ERC-20", status=200,
-              address_hash=None, extra=None):
-        body = {"address_hash": address_hash or token, "name": name, "symbol": symbol,
-                "decimals": decimals, "type": type_, "holders_count": "12",
-                "exchange_rate": None}
-        if extra:
-            body.update(extra)
-        stub.WEB[token_url(chain, token)] = (status, json.dumps(body))
+    def token(self, chain, token, name, symbol, decimals="6", type_="ERC-20", bytes32=False):
+        if type_ in ("ERC-721", "ERC-1155"):
+            decimals = None
+        self.chains[chain].transport_error.discard(token.lower())
+        self.chains[chain].tokens[token.lower()] = {
+            "name": name, "symbol": symbol, "type": type_, "bytes32": bytes32,
+            "decimals": None if decimals is None else int(decimals)}
 
-    def raw(self, url, status, body):
-        stub.WEB[url] = (status, body)
+    def down_token(self, chain, token):
+        self.chains[chain].transport_error.add(token.lower())
 
-    def down(self, url):
-        stub.WEB[url] = (503, "<html>bad gateway</html>")
+    def up_token(self, chain, token):
+        self.chains[chain].transport_error.discard(token.lower())
+
+    def down_rpc(self, chain, status=503):
+        self.chains[chain].status = status
+
+    def down_list(self):
+        stub.WEB[LIST_URL] = (503, "<html>bad gateway</html>")
 
 
 class World:
     def __init__(self, rule_window_s=6 * HOUR, recheck_cooldown_s=HOUR):
         stub.WEB.clear()
+        stub.RPC.clear()
         stub.SEQ.clear()
         stub.CALLS.clear()
         stub.MODEL.reset()

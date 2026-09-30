@@ -15,47 +15,56 @@ import typing
 # accept a token.
 #
 # HOW A CASE IS DECIDED. Anyone flags (chain, token, coin). Every validator
-# reads the token's name, symbol, decimals and type from the chain's Blockscout
-# explorer and the coin's official addresses from the Uniswap default token
-# list, and they must agree on that evidence byte for byte. Code then applies
-# six rules in order; the first that fits decides and is stored as `basis`:
+# reads the token's name(), symbol() and decimals() straight from the chain
+# with eth_call on a public JSON-RPC endpoint, and the coin's official
+# addresses from the Uniswap default token list. Validators must agree on
+# that evidence byte for byte. Code then applies six rules in order; the
+# first that fits decides and is stored as `basis`:
 #
-#   1. NOT_ERC20       the address is not an ERC-20 token        -> UNRELATED
-#   2. OFFICIAL_LIST   the token is on the official list          -> OFFICIAL
-#   3. NO_BRAND_MATCH  neither name nor symbol carries the coin   -> UNRELATED
-#   4. HOMOGLYPH       name or symbol IS the coin once disguises
-#                      are removed, and the raw text has one      -> IMPERSONATOR
-#   5. EXACT_COPY      symbol is exactly the coin's symbol and no
-#                      bridge/wrap disclosure word appears         -> IMPERSONATOR
+#   1. NOT_ERC20       the contract does not answer as an ERC-20     -> UNRELATED
+#   2. OFFICIAL_LIST   the list has an entry with this chainId, this
+#                      address and the coin's symbol                   -> OFFICIAL
+#   2b. LISTED_VARIANT / LISTED_OTHER  the list carries this exact chainId
+#                      and address as a different asset (e.g. USDC.e)  -> VARIANT
+#                      if the list's symbol/name carries the coin, else UNRELATED
+#   3. NO_BRAND_MATCH  neither name nor symbol carries the coin, even
+#                      with digit look-alikes read as letters, and no
+#                      character the code cannot read                  -> UNRELATED
+#   4. HOMOGLYPH       name or symbol IS the coin once disguises are
+#                      removed, and the raw text has one               -> IMPERSONATOR
+#   5. EXACT_COPY      symbol is exactly the coin's symbol, no bridge/
+#                      wrap disclosure word, no unreadable character   -> IMPERSONATOR
 #   6. MODEL           everything else: validators ask a model one
-#                      question and must agree on a single label   -> any of
+#                      question and must agree on a single label       -> any of
 #                      IMPERSONATOR / VARIANT / UNRELATED
 #
-# The model only ever sees rule 6 cases, i.e. names that carry the brand but
-# are not a plain copy (e.g. "Bridged USDC", "USDC Vault"). The code decides
-# the rest.
+# COVERAGE. A (coin, chain) pair is accepted only if the official list
+# carried the coin on that chain when this table was frozen (COVERAGE). If a
+# covered pair has no list entry when a case is judged, that is an evidence
+# failure: a real coin missing from the list is never judged against an
+# empty official set, so it can never be called an impersonator.
 #
 # OFFICIAL means exactly "on the Uniswap default token list for this chain
 # under the coin's symbol, at the time of the ruling". It is not a badge of
 # approval; the register only says which tokens copy a coin.
 #
-# NO MONEY. No value is accepted, nothing is staked, nothing is paid out. There
-# is no owner and no setter: the chain table, the coin table and the time
-# windows are frozen in the constructor.
+# NO MONEY. No value is accepted, nothing is staked, nothing is paid out.
+# There is no owner and no setter: the chain table, the coin table, the
+# coverage table and the time windows are frozen in the constructor.
 
 MAX_BATCH = 5
 NAME_CAP = 128
 LIST_URL = "https://tokens.uniswap.org"
+MIN_LIST_TOKENS = 100
 DAY = 86400
 
-# chain -> (explorer base URL, EVM chain id). Explorer hosts measured in
-# docs/PROBE.md; optimism.blockscout.com redirects to explorer.optimism.io.
+# chain -> (keyless JSON-RPC endpoint, EVM chain id). Measured in docs/PROBE.md.
 CHAIN_TABLE = {
-    "ethereum": ["https://eth.blockscout.com", 1],
-    "base": ["https://base.blockscout.com", 8453],
-    "arbitrum": ["https://arbitrum.blockscout.com", 42161],
-    "optimism": ["https://explorer.optimism.io", 10],
-    "polygon": ["https://polygon.blockscout.com", 137],
+    "ethereum": ["https://ethereum-rpc.publicnode.com", 1],
+    "base": ["https://base-rpc.publicnode.com", 8453],
+    "arbitrum": ["https://arbitrum-one-rpc.publicnode.com", 42161],
+    "optimism": ["https://optimism-rpc.publicnode.com", 10],
+    "polygon": ["https://polygon-bor-rpc.publicnode.com", 137],
 }
 
 # coin id -> symbol, name, and the symbols under which the official list
@@ -66,6 +75,16 @@ COIN_TABLE = {
     "weth": {"symbol": "WETH", "name": "Wrapped Ether", "list_symbols": ["WETH"]},
     "dai": {"symbol": "DAI", "name": "Dai", "list_symbols": ["DAI"]},
     "wrapped-bitcoin": {"symbol": "WBTC", "name": "Wrapped Bitcoin", "list_symbols": ["WBTC"]},
+}
+
+# coin -> chains on which tokens.uniswap.org (v22.21.0) has an entry for it.
+# Measured 2026-09-30 (docs/COVERAGE.md). Base has no USDT and no WBTC entry.
+COVERAGE = {
+    "usd-coin": ["arbitrum", "base", "ethereum", "optimism", "polygon"],
+    "tether": ["arbitrum", "ethereum", "optimism", "polygon"],
+    "weth": ["arbitrum", "base", "ethereum", "optimism", "polygon"],
+    "dai": ["arbitrum", "base", "ethereum", "optimism", "polygon"],
+    "wrapped-bitcoin": ["arbitrum", "ethereum", "optimism", "polygon"],
 }
 
 DISCLOSURE_WORDS = ["BRIDGED", "BRIDGE", "POS", "WORMHOLE", "STARGATE", "AXELAR", "CELER",
@@ -91,16 +110,32 @@ _CONFUSABLE_PAIRS = (
 CONFUSABLES = {_CONFUSABLE_PAIRS[i]: _CONFUSABLE_PAIRS[i + 1]
                for i in range(0, len(_CONFUSABLE_PAIRS), 2)}
 
+# Digits that read as letters. Used only to send a name to the model, never
+# to decide by code.
+DIGIT_LOOKALIKES = {"0": "O", "1": "I", "3": "E", "4": "A", "5": "S", "7": "T", "8": "B"}
+
 # Characters that render as nothing. Anything of Unicode category Cf counts
-# too; this list adds the invisible ones that are not Cf.
+# too (that includes every bidi control); this list adds the invisible ones
+# that are not Cf.
 _INVISIBLE = set([0x00AD, 0x034F, 0x115F, 0x1160, 0x17B4, 0x17B5, 0x180E, 0x3164, 0xFFA0]
                  + list(range(0x200B, 0x2010)) + list(range(0x202A, 0x202F))
                  + list(range(0x2060, 0x2070)) + list(range(0xFE00, 0xFE10)) + [0xFEFF])
+
+# Bidirectional controls change the DISPLAY order, so the code cannot know
+# what a reader sees; text holding one is never decided by rules 3 or 5.
+_BIDI = set([0x061C, 0x200E, 0x200F] + list(range(0x202A, 0x202F)) + list(range(0x2066, 0x206A)))
 
 STATES = ["PENDING", "IMPERSONATOR", "VARIANT", "UNRELATED", "OFFICIAL", "EXPIRED"]
 RULED = ["IMPERSONATOR", "VARIANT", "UNRELATED", "OFFICIAL"]
 LABELS = ["IMPERSONATOR", "VARIANT", "UNRELATED"]
 PRECEDENT_BASES = ["HOMOGLYPH", "EXACT_COPY", "MODEL"]
+
+SEL_NAME = "0x06fdde03"
+SEL_SYMBOL = "0x95d89b41"
+SEL_DECIMALS = "0x313ce567"
+SEL_SUPPORTS = "0x01ffc9a7"
+IFACE_ERC721 = "80ac58cd"
+IFACE_ERC1155 = "d9b67a26"
 
 
 def _fail(msg: str) -> None:
@@ -154,13 +189,20 @@ def _is_invisible(ch: str) -> bool:
     return ord(ch) in _INVISIBLE or unicodedata.category(ch) == "Cf"
 
 
-def _normal(text: str) -> str:
-    """NFKC, invisibles removed, confusables mapped to Latin, upper case."""
+def _is_mark(ch: str) -> bool:
     import unicodedata
-    s = unicodedata.normalize("NFKC", text)
+    return unicodedata.category(ch) in ("Mn", "Me")
+
+
+def _normal(text: str) -> str:
+    """NFKC, then decomposed so accents and combining marks can be dropped,
+    invisibles removed, confusables mapped to Latin, upper case. Works on the
+    FULL string."""
+    import unicodedata
+    s = unicodedata.normalize("NFD", unicodedata.normalize("NFKC", text))
     out = []
     for ch in s:
-        if _is_invisible(ch):
+        if _is_invisible(ch) or _is_mark(ch):
             continue
         out.append(CONFUSABLES.get(ch, ch))
     return "".join(out).upper()
@@ -171,14 +213,41 @@ def skeleton(text: str) -> str:
     return "".join(ch for ch in _normal(text) if ("A" <= ch <= "Z") or ("0" <= ch <= "9"))
 
 
-def disguised(text: str) -> bool:
-    """True if the raw text holds an invisible character, a look-alike letter
-    from another script, or a compatibility form (full-width etc.)."""
+def folded(skel: str) -> str:
+    """A skeleton with digit look-alikes read as letters (U5DC -> USDC)."""
+    return "".join(DIGIT_LOOKALIKES.get(ch, ch) for ch in skel)
+
+
+def _is_disguise_char(ch: str) -> bool:
     import unicodedata
+    if _is_invisible(ch) or _is_mark(ch) or ch in CONFUSABLES:
+        return True
+    if unicodedata.normalize("NFKC", ch) != ch:
+        return True
+    return unicodedata.normalize("NFD", ch) != ch
+
+
+def disguised(text: str) -> bool:
+    """True if the raw text holds an invisible or bidi character, a combining
+    mark or accented letter, a look-alike letter from another script, or a
+    compatibility form (full-width etc.)."""
     for ch in text:
-        if _is_invisible(ch) or ch in CONFUSABLES:
+        if _is_disguise_char(ch):
             return True
-    return unicodedata.normalize("NFKC", text) != text
+    return False
+
+
+def unknown_chars(text: str) -> bool:
+    """True if the raw text holds a non-ASCII character the code does not
+    know how to read (another script, an emoji, a symbol) or a bidi control
+    that reorders what is displayed. Such names are never decided by rules 3
+    or 5; they go to the model."""
+    for ch in text:
+        if ord(ch) in _BIDI:
+            return True
+        if ord(ch) > 127 and not _is_disguise_char(ch):
+            return True
+    return False
 
 
 def _words(text: str) -> list:
@@ -209,6 +278,23 @@ def disclosure_found(name: str, symbol: str, coin_name: str) -> list:
     return sorted(found)
 
 
+def text_facts(name: str, symbol: str, coin: str) -> dict:
+    """Everything the rules need from the FULL raw strings. Only the display
+    copies are capped."""
+    s_name = skeleton(name)
+    s_sym = skeleton(symbol)
+    return {
+        "name": name[:NAME_CAP], "symbol": symbol[:NAME_CAP],
+        "name_sha256": _sha(name), "symbol_sha256": _sha(symbol),
+        "name_len": len(name), "symbol_len": len(symbol),
+        "skeleton_name": s_name, "skeleton_symbol": s_sym,
+        "folded_name": folded(s_name), "folded_symbol": folded(s_sym),
+        "disguised": disguised(name) or disguised(symbol),
+        "unknown_chars": unknown_chars(name) or unknown_chars(symbol),
+        "disclosure": disclosure_found(name, symbol, COIN_TABLE[coin]["name"]),
+    }
+
+
 # --- inputs ------------------------------------------------------------------
 
 
@@ -235,11 +321,24 @@ def case_key(chain: str, token: str, coin: str) -> str:
 # --- evidence (runs inside the nondet block) -----------------------------------
 
 
+def _post(url: str, body: str) -> tuple:
+    try:
+        res = gl.nondet.web.request(url, method="POST", body=body.encode("utf-8"),
+                                    headers={"Content-Type": "application/json"})
+    except Exception:
+        return (-1, "")
+    return _unpack(res)
+
+
 def _get(url: str) -> tuple:
     try:
         res = gl.nondet.web.request(url, method="GET")
     except Exception:
         return (-1, "")
+    return _unpack(res)
+
+
+def _unpack(res: typing.Any) -> tuple:
     status = getattr(res, "status", None)
     if status is None:
         status = getattr(res, "status_code", 0)
@@ -253,34 +352,102 @@ def _get(url: str) -> tuple:
     return (status, str(body or ""))
 
 
-def _token_facts(explorer: str, token: str) -> typing.Any:
-    """name/symbol/decimals/type from Blockscout, or None (404, non-JSON,
-    wrong address, wrong field types)."""
-    status, body = _get(explorer + "/api/v2/tokens/" + token)
+def _hex_bytes(value: typing.Any) -> typing.Any:
+    if not isinstance(value, str) or not value.startswith("0x") or len(value) % 2 != 0:
+        return None
+    try:
+        return bytes.fromhex(value[2:])
+    except Exception:
+        return None
+
+
+def abi_string(value: typing.Any) -> typing.Any:
+    """A name()/symbol() return value as text: ABI `string`, or the older
+    `bytes32` form. None if it is neither."""
+    data = _hex_bytes(value)
+    if data is None or len(data) < 32:
+        return None
+    if len(data) == 32:
+        return data.rstrip(b"\x00").decode("utf-8", errors="replace")
+    off = int.from_bytes(data[0:32], "big")
+    if off + 32 > len(data):
+        return None
+    n = int.from_bytes(data[off:off + 32], "big")
+    if off + 32 + n > len(data):
+        return None
+    return data[off + 32:off + 32 + n].decode("utf-8", errors="replace")
+
+
+def abi_uint(value: typing.Any) -> typing.Any:
+    data = _hex_bytes(value)
+    if data is None or len(data) != 32:
+        return None
+    return int.from_bytes(data, "big")
+
+
+def _rpc_batch(token: str) -> str:
+    def call(i: int, data: str) -> dict:
+        return {"jsonrpc": "2.0", "id": i, "method": "eth_call",
+                "params": [{"to": token, "data": data}, "latest"]}
+    pad = "0" * 56
+    return json.dumps([
+        {"jsonrpc": "2.0", "id": 1, "method": "eth_getCode", "params": [token, "latest"]},
+        call(2, SEL_NAME), call(3, SEL_SYMBOL), call(4, SEL_DECIMALS),
+        call(5, SEL_SUPPORTS + IFACE_ERC721 + pad), call(6, SEL_SUPPORTS + IFACE_ERC1155 + pad),
+    ], separators=(",", ":"))
+
+
+def token_facts(rpc: str, token: str, coin: str) -> typing.Any:
+    """name/symbol/decimals read from the chain, or None when the chain could
+    not be read (HTTP error, non-JSON, a transport error, or no contract at
+    the address). A contract that answers but not as an ERC-20 is a FACT
+    (type NOT_ERC20), not a failure."""
+    status, body = _post(rpc, _rpc_batch(token))
     if status != 200:
         return None
     try:
-        d = json.loads(body)
+        replies = json.loads(body)
     except Exception:
         return None
-    if not isinstance(d, dict):
+    if not isinstance(replies, list):
         return None
-    if str(d.get("address_hash") or "").lower() != token:
+    by_id = {}
+    for r in replies:
+        if isinstance(r, dict) and isinstance(r.get("id"), int):
+            by_id[r["id"]] = r
+    if sorted(by_id.keys()) != [1, 2, 3, 4, 5, 6]:
         return None
-    name = d.get("name")
-    symbol = d.get("symbol")
-    name = "" if name is None else name
-    symbol = "" if symbol is None else symbol
-    if not isinstance(name, str) or not isinstance(symbol, str):
-        return None
-    decimals = d.get("decimals")
-    decimals = "" if decimals is None else str(decimals)
-    return {"type": str(d.get("type") or ""), "name": name[:NAME_CAP], "symbol": symbol[:NAME_CAP],
-            "name_sha256": _sha(name), "symbol_sha256": _sha(symbol), "decimals": decimals[:32]}
+    out = {}
+    for i in range(1, 7):
+        r = by_id[i]
+        if "error" in r:
+            err = r["error"]
+            msg = str(err.get("message", "")) if isinstance(err, dict) else str(err)
+            code = err.get("code") if isinstance(err, dict) else None
+            if i == 1 or not (code == 3 or "revert" in msg.lower()):
+                return None          # transport trouble, not an answer from the token
+            out[i] = None            # the call reverted: a fact about the token
+        else:
+            out[i] = r.get("result")
+    code_hex = out[1]
+    if not isinstance(code_hex, str) or code_hex in ("0x", "0x0") or code_hex.startswith("0xef0100"):
+        return None                  # no contract (or an EIP-7702 delegated account)
+    name = abi_string(out[2])
+    symbol = abi_string(out[3])
+    decimals = abi_uint(out[4])
+    nft = abi_uint(out[5]) == 1 or abi_uint(out[6]) == 1
+    is_erc20 = (name is not None and symbol is not None and decimals is not None
+                and decimals <= 255 and not nft)
+    f = text_facts(name or "", symbol or "", coin)
+    f["type"] = "ERC-20" if is_erc20 else ("NFT" if nft else "NOT_ERC20")
+    f["decimals"] = str(decimals) if decimals is not None and decimals <= 255 else ""
+    return f
 
 
-def _list_tokens() -> typing.Any:
-    """The official list's `tokens` array, or None."""
+def list_tokens() -> typing.Any:
+    """The official list's `tokens` array, or None. A cut-off or unparsable
+    response, a missing `tokens` array or a suspiciously short one is a
+    failure, never an empty official set."""
     status, body = _get(LIST_URL)
     if status != 200:
         return None
@@ -291,103 +458,139 @@ def _list_tokens() -> typing.Any:
     if not isinstance(d, dict):
         return None
     tokens = d.get("tokens")
-    if not isinstance(tokens, list):
+    if not isinstance(tokens, list) or len(tokens) < MIN_LIST_TOKENS:
         return None
     return tokens
 
 
-def official_for(tokens: list, chain_id: int, list_symbols: list, tracked_ids: list) -> typing.Any:
-    """Sorted lower-case official addresses of the coin on one chain, or None
-    when the list does not carry the coin on ANY tracked chain (then it cannot
-    tell an official token from a copy, so nothing is decided)."""
+def official_for(tokens: list, chain_id: int, list_symbols: list) -> list:
+    """Sorted lower-case addresses of every list entry with this chainId and
+    one of the coin's symbols."""
     out = []
-    covered = False
     for t in tokens:
-        if not isinstance(t, dict):
+        if not isinstance(t, dict) or t.get("chainId") != chain_id:
             continue
         if t.get("symbol") not in list_symbols:
-            continue
-        cid = t.get("chainId")
-        if cid in tracked_ids:
-            covered = True
-        if cid != chain_id:
             continue
         a = norm_token(t.get("address"))
         if a and a not in out:
             out.append(a)
-    if not covered:
-        return None
     return sorted(out)
+
+
+def list_match(tokens: list, chain_id: int, token: str, list_symbols: list) -> typing.Any:
+    """The list entry that makes `token` official: same chainId, same address,
+    one of the coin's symbols. None if there is none."""
+    for t in tokens:
+        if not isinstance(t, dict) or t.get("chainId") != chain_id:
+            continue
+        if t.get("symbol") not in list_symbols:
+            continue
+        if norm_token(t.get("address")) == token:
+            return {"chainId": chain_id, "address": token, "symbol": t.get("symbol")}
+    return None
+
+
+def list_entry(tokens: list, chain_id: int, token: str) -> typing.Any:
+    """Any list entry for this exact chainId and address, whatever its
+    symbol (the list carries bridged USDC.e under its own symbol). Name and
+    symbol are the list's, capped; None if the list does not carry it."""
+    for t in tokens:
+        if not isinstance(t, dict) or t.get("chainId") != chain_id:
+            continue
+        if norm_token(t.get("address")) == token:
+            sym = t.get("symbol")
+            name = t.get("name")
+            return {"chainId": chain_id, "address": token,
+                    "symbol": sym[:NAME_CAP] if isinstance(sym, str) else "",
+                    "name": name[:NAME_CAP] if isinstance(name, str) else ""}
+    return None
 
 
 def collect_evidence(chain: str, tokens: list, coin: str) -> str:
     """Canonical evidence JSON for one or more tokens against one coin, or
     "FAIL". Every validator runs this itself and compares strings."""
-    explorer = CHAIN_TABLE[chain][0]
+    rpc = CHAIN_TABLE[chain][0]
     chain_id = CHAIN_TABLE[chain][1]
-    tracked = [CHAIN_TABLE[c][1] for c in CHAIN_TABLE]
-    lst = _list_tokens()
+    symbols = COIN_TABLE[coin]["list_symbols"]
+    lst = list_tokens()
     if lst is None:
         return "FAIL"
-    official = official_for(lst, chain_id, COIN_TABLE[coin]["list_symbols"], tracked)
-    if official is None:
-        return "FAIL"
+    official = official_for(lst, chain_id, symbols)
+    if len(official) == 0:
+        return "FAIL"                # covered pair, but the list lost the coin
     facts = {}
+    matches = {}
+    listed = {}
     for tok in tokens:
-        f = _token_facts(explorer, tok)
+        f = token_facts(rpc, tok, coin)
         facts[tok] = f if f is not None else "FAIL"
-    return _canon({"chain": chain, "coin": coin, "official": official, "tokens": facts, "v": 1})
+        matches[tok] = list_match(lst, chain_id, tok, symbols)
+        listed[tok] = list_entry(lst, chain_id, tok)
+    return _canon({"chain": chain, "chain_id": chain_id, "coin": coin, "official": official,
+                   "matches": matches, "listed": listed, "tokens": facts, "v": 2})
 
 
 # --- the rules ---------------------------------------------------------------
 
 
-def decide(token: str, facts: dict, official: list, coin: str) -> dict:
-    """Rules 1-5 in order. Returns {"label", "basis", ...facts}; label is
-    "MODEL" when rule 6 applies."""
+def decide(token: str, f: dict, official: list, match: typing.Any, chain_id: int, coin: str,
+           listed: typing.Any = None) -> dict:
+    """Rules 1-5 in order on agreed evidence. Returns {"label", "basis"};
+    label is "MODEL" when rule 6 applies."""
     c = COIN_TABLE[coin]
-    name = facts["name"]
-    symbol = facts["symbol"]
-    s_sym = skeleton(symbol)
-    s_name = skeleton(name)
     c_sym = skeleton(c["symbol"])
     c_name = skeleton(c["name"])
-    words = disclosure_found(name, symbol, c["name"])
-    hidden = disguised(name) or disguised(symbol)
-    out = {"skeleton_symbol": s_sym, "skeleton_name": s_name, "disclosure": words,
-           "disguised": hidden, "official_on_chain": len(official) > 0}
-    if facts["type"] != "ERC-20":
-        out.update({"label": "UNRELATED", "basis": "NOT_ERC20"})
-        return out
-    if token in official:
-        out.update({"label": "OFFICIAL", "basis": "OFFICIAL_LIST"})
-        return out
-    if not ((c_sym in s_sym) or (c_sym in s_name) or (c_name in s_name)):
-        out.update({"label": "UNRELATED", "basis": "NO_BRAND_MATCH"})
-        return out
-    if (s_sym == c_sym or s_name == c_name) and hidden:
-        out.update({"label": "IMPERSONATOR", "basis": "HOMOGLYPH"})
-        return out
-    if s_sym == c_sym and len(words) == 0:
-        out.update({"label": "IMPERSONATOR", "basis": "EXACT_COPY"})
-        return out
-    out.update({"label": "MODEL", "basis": "MODEL"})
-    return out
+    s_sym = f["skeleton_symbol"]
+    s_name = f["skeleton_name"]
+
+    def brand(sym: str, name: str) -> bool:
+        return (c_sym in sym) or (c_sym in name) or (c_name in name)
+
+    if f["type"] != "ERC-20":
+        return {"label": "UNRELATED", "basis": "NOT_ERC20"}
+    if (isinstance(match, dict) and match.get("chainId") == chain_id and match.get("address") == token
+            and token in official):
+        return {"label": "OFFICIAL", "basis": "OFFICIAL_LIST"}
+    # 2b. The curated list carries this exact (chainId, address) as a different
+    # asset (e.g. bridged USDC.e). A scam token cannot put itself on that list,
+    # so it is never an impersonator: VARIANT if the list's own symbol or name
+    # carries the coin, else UNRELATED. Tokens often call themselves plain
+    # "USDC" on chain (Arbitrum USDC.e: "USD Coin (Arb1)" / "USDC").
+    if (isinstance(listed, dict) and listed.get("chainId") == chain_id
+            and listed.get("address") == token):
+        l_sym = skeleton(str(listed.get("symbol", "")))
+        l_name = skeleton(str(listed.get("name", "")))
+        if brand(l_sym, l_name):
+            return {"label": "VARIANT", "basis": "LISTED_VARIANT"}
+        return {"label": "UNRELATED", "basis": "LISTED_OTHER"}
+    has_official = len(official) > 0
+    if (not brand(s_sym, s_name) and not brand(f["folded_symbol"], f["folded_name"])
+            and not f["unknown_chars"]):
+        return {"label": "UNRELATED", "basis": "NO_BRAND_MATCH"}
+    if has_official and (s_sym == c_sym or s_name == c_name) and f["disguised"]:
+        return {"label": "IMPERSONATOR", "basis": "HOMOGLYPH"}
+    if has_official and s_sym == c_sym and len(f["disclosure"]) == 0 and not f["unknown_chars"]:
+        return {"label": "IMPERSONATOR", "basis": "EXACT_COPY"}
+    return {"label": "MODEL", "basis": "MODEL"}
 
 
-def model_prompt(chain: str, facts: dict, coin: str, d: dict) -> str:
+def model_prompt(chain: str, f: dict, coin: str, official_on_chain: bool) -> str:
     c = COIN_TABLE[coin]
     data = {
         "chain": chain,
-        "token_name_untrusted": facts["name"],
-        "token_symbol_untrusted": facts["symbol"],
-        "name_as_displayed": d["skeleton_name"],
-        "symbol_as_displayed": d["skeleton_symbol"],
-        "hidden_or_lookalike_characters": "yes" if d["disguised"] else "no",
+        "token_name_untrusted": f["name"],
+        "token_symbol_untrusted": f["symbol"],
+        "name_as_displayed": f["skeleton_name"],
+        "symbol_as_displayed": f["skeleton_symbol"],
+        "name_with_digits_read_as_letters": f["folded_name"],
+        "symbol_with_digits_read_as_letters": f["folded_symbol"],
+        "hidden_or_lookalike_characters": "yes" if f["disguised"] else "no",
+        "characters_from_other_scripts_or_symbols": "yes" if f["unknown_chars"] else "no",
         "coin_name": c["name"],
         "coin_symbol": c["symbol"],
-        "bridge_or_wrap_words_found": d["disclosure"],
-        "coin_has_official_deployment_on_this_chain": "yes" if d["official_on_chain"] else "no",
+        "bridge_or_wrap_words_found": f["disclosure"],
+        "coin_has_official_deployment_on_this_chain": "yes" if official_on_chain else "no",
     }
     return (
         "You classify an ERC-20 token against a well-known coin for a public register of "
@@ -469,7 +672,8 @@ class Lookalike(gl.contract.Contract):
         self.rule_window_s = u64(w)
         self.recheck_cooldown_s = u64(r)
         self.config = _canon({
-            "chains": CHAIN_TABLE, "coins": COIN_TABLE, "official_list": LIST_URL,
+            "chains": CHAIN_TABLE, "coins": COIN_TABLE, "coverage": COVERAGE,
+            "official_list": LIST_URL,
             "disclosure_words": DISCLOSURE_WORDS + [".E"], "max_batch": MAX_BATCH,
             "rule_window_s": w, "recheck_cooldown_s": r,
             "official_means": "on the Uniswap default token list for the chain under the "
@@ -483,6 +687,10 @@ class Lookalike(gl.contract.Contract):
 
     def _now(self) -> int:
         return _epoch_from_iso(gl.message.raw.get("datetime", ""))
+
+    def _covered(self, chain: str, coin: str) -> bool:
+        cov = json.loads(str(self.config))["coverage"]
+        return chain in cov.get(coin, [])
 
     def _case(self, case_id: typing.Any) -> typing.Any:
         try:
@@ -560,26 +768,33 @@ class Lookalike(gl.contract.Contract):
         if not isinstance(raw, str) or raw == "FAIL":
             return None
         ev = json.loads(raw)
-        facts = ev["tokens"].get(token)
-        if not isinstance(facts, dict):
+        f = ev["tokens"].get(token)
+        if not isinstance(f, dict):
             return None
-        d = decide(token, facts, ev["official"], coin)
+        d = decide(token, f, ev["official"], ev["matches"].get(token), int(ev["chain_id"]), coin,
+                   ev["listed"].get(token))
         label = d["label"]
         if label == "MODEL":
-            label = self._model_round(model_prompt(chain, facts, coin, d))
+            label = self._model_round(model_prompt(chain, f, coin, len(ev["official"]) > 0))
             if label not in LABELS:
                 return None
             self.total_model_rulings = u64(int(self.total_model_rulings) + 1)
-        d.pop("label")
-        basis = d.pop("basis")
-        return (label, basis, raw, d)
+        return (label, d["basis"], raw, self._facts_view(f, ev["official"]))
+
+    def _facts_view(self, f: dict, official: list) -> dict:
+        keep = ["skeleton_name", "skeleton_symbol", "folded_name", "folded_symbol", "disguised",
+                "unknown_chars", "disclosure", "name_len", "symbol_len"]
+        out = {k: f[k] for k in keep}
+        out["official_on_chain"] = len(official) > 0
+        return out
 
     def _apply(self, case: typing.Any, verdict: tuple, now: int) -> None:
         label, basis, raw, facts = verdict
         ev = json.loads(raw)
         tf = ev["tokens"][str(case.token)]
         entry = {"label": label, "basis": basis, "at": now, "evidence_sha256": _sha(raw),
-                 "name": tf["name"], "symbol": tf["symbol"], "decimals": tf["decimals"]}
+                 "name_sha256": tf["name_sha256"], "symbol_sha256": tf["symbol_sha256"],
+                 "decimals": tf["decimals"]}
         if basis == "PRECEDENT":
             entry["precedent_case_id"] = facts["precedent_case_id"]
         hist = json.loads(str(case.history) or "[]")
@@ -594,16 +809,18 @@ class Lookalike(gl.contract.Contract):
     def _view(self, case: typing.Any) -> dict:
         ev = json.loads(str(case.evidence)) if str(case.evidence) else None
         tf = ev["tokens"].get(str(case.token)) if isinstance(ev, dict) else None
+        tf = tf if isinstance(tf, dict) else {}
         return {
             "case_id": int(case.case_id), "chain": str(case.chain), "token": str(case.token),
             "coin": str(case.coin), "state": str(case.state), "basis": str(case.basis),
             "flagged_by": str(case.flagged_by), "created_at": int(case.created_at),
             "deadline": int(case.deadline), "ruled_at": int(case.ruled_at),
             "root_case_id": int(case.root_id), "rechecks": int(case.rechecks),
-            "name": tf["name"] if isinstance(tf, dict) else "",
-            "symbol": tf["symbol"] if isinstance(tf, dict) else "",
-            "decimals": tf["decimals"] if isinstance(tf, dict) else "",
+            "name": tf.get("name", ""), "symbol": tf.get("symbol", ""),
+            "decimals": tf.get("decimals", ""), "token_type": tf.get("type", ""),
             "official_addresses": ev["official"] if isinstance(ev, dict) else [],
+            "official_list_entry": ev["matches"].get(str(case.token)) if isinstance(ev, dict) else None,
+            "list_entry": ev["listed"].get(str(case.token)) if isinstance(ev, dict) else None,
             "facts": json.loads(str(case.facts)) if str(case.facts) else {},
             "history": json.loads(str(case.history) or "[]"),
             "meaning": _MEANING.get(str(case.state), ""),
@@ -624,6 +841,8 @@ class Lookalike(gl.contract.Contract):
     @gl.public.write
     def flag(self, chain: str, token: str, coin_id: str) -> int:
         chain, token, coin = self._check_inputs(chain, token, coin_id)
+        if not self._covered(chain, coin):
+            _fail("the official list does not cover this coin on this chain")
         if not self._key_free(case_key(chain, token, coin)):
             _fail("an open or ruled case already exists for this chain, token and coin")
         now = self._now()
@@ -700,6 +919,8 @@ class Lookalike(gl.contract.Contract):
         if str(prec.state) != "IMPERSONATOR" or str(prec.basis) not in PRECEDENT_BASES:
             _fail("precedent must be an IMPERSONATOR ruled by HOMOGLYPH, EXACT_COPY or MODEL")
         coin = str(prec.coin)
+        if not self._covered(chain, coin):
+            _fail("the official list does not cover this coin on this chain")
         pev = json.loads(str(prec.evidence))
         pf = pev["tokens"][str(prec.token)]
 
@@ -724,8 +945,10 @@ class Lookalike(gl.contract.Contract):
                     why = "EVIDENCE_UNAVAILABLE"
                 elif f["type"] != "ERC-20":
                     why = "NOT_ERC20"
-                elif n in ev["official"]:
+                elif ev["matches"].get(n) is not None or n in ev["official"]:
                     why = "OFFICIAL_LIST"
+                elif ev["listed"].get(n) is not None:
+                    why = "ON_LIST_AS_OTHER_ASSET"
                 elif (f["name_sha256"] != pf["name_sha256"] or f["symbol_sha256"] != pf["symbol_sha256"]
                       or f["decimals"] != pf["decimals"]):
                     why = "NOT_IDENTICAL"
@@ -733,13 +956,12 @@ class Lookalike(gl.contract.Contract):
                     skipped.append({"token": n, "reason": why})
                     continue
                 case = self._new_case(chain, n, coin, now)
-                one = _canon({"chain": chain, "coin": coin, "official": ev["official"],
-                              "tokens": {n: f}, "v": 1})
-                d = decide(n, f, ev["official"], coin)
-                d.pop("label")
-                d.pop("basis")
-                d["precedent_case_id"] = int(prec.case_id)
-                self._apply(case, ("IMPERSONATOR", "PRECEDENT", one, d), now)
+                one = _canon({"chain": chain, "chain_id": ev["chain_id"], "coin": coin,
+                              "official": ev["official"], "matches": {n: None},
+                              "listed": {n: None}, "tokens": {n: f}, "v": 2})
+                facts = self._facts_view(f, ev["official"])
+                facts["precedent_case_id"] = int(prec.case_id)
+                self._apply(case, ("IMPERSONATOR", "PRECEDENT", one, facts), now)
                 case.root_id = prec.case_id
                 self.total_precedent = u64(int(self.total_precedent) + 1)
                 flagged.append({"token": n, "case_id": int(case.case_id)})

@@ -195,12 +195,19 @@ class _Resp:
 
 
 WEB = {}        # url -> (status, body) | Exception   (sticky)
+RPC = {}        # url -> callable(request body str) -> (status, body) | Exception
 SEQ = {}        # url -> [answers...] consumed first (leader, then validator, ...)
 CALLS = []      # (url, headers) in order
 
 
-def _web_request(url, method="GET", headers=None, **_k):
+def _web_request(url, method="GET", headers=None, body=None, **_k):
     CALLS.append((url, dict(headers or {})))
+    if method == "POST" and url in RPC:
+        text = body.decode("utf-8") if isinstance(body, (bytes, bytearray)) else str(body)
+        got = RPC[url](text)
+        if isinstance(got, Exception):
+            raise got
+        return _Resp(*got)
     q = SEQ.get(url)
     if q:
         got = q.pop(0)

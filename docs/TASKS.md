@@ -32,3 +32,19 @@ Status legend: [ ] todo · [~] in progress · [x] done · [!] blocked (reason in
 ## Step 4 - README + push
 - [x] README
 - [x] push to github.com/kenil1710/lookalike; deployed file byte-identical to pushed HEAD (verify_onchain.mjs --ref=origin/main)
+
+## Hardening round (2026-09-30)
+- [x] key safety: test/.accounts.json ignored, never committed on any ref; only a code comment matches "privateKey"
+- [x] H1 name/symbol/decimals via eth_call JSON-RPC batch (publicnode), measured in GenVM
+- [x] H2 list binding: OFFICIAL needs the entry's chainId + address == the case's; rule 2b for listed variants
+- [x] H3 full-string skeleton, combining marks, bidi, unknown non-ASCII -> model, digit look-alikes -> model
+- [x] H4 no leader text stored; history keeps hashes only
+- [x] H5 no payable (test)
+- [x] H6 Safelist.prune
+- [ ] H7 MODEL seeds twice on DEMO (seed script ready; runs after the keystore redeploy)
+- [ ] H8 verify_source.mjs against HEAD for all three (after the keystore redeploy)
+- [x] H9 README "What the model never decides"
+- [x] coverage gate (docs/COVERAGE.md), refuse uncovered pairs; rules 4/5 need an official entry; tests
+- [x] list size 667,466 bytes; truncated/unparsable/short list = evidence failure; tests
+- [x] smoke deploy of the hardened source on studio-dev (scratch instance)
+- [ ] user runs keystore deploy; reseed; verify; ADDRESSES.md, README, SEEDS.md; push

@@ -3,7 +3,7 @@
  * (`gen_getContractCode`) and compares it byte for byte with the file at a git
  * ref (default HEAD; `--ref=origin/main` after pushing).
  *
- *   node verify_onchain.mjs [--ref=origin/main]
+ *   node verify_source.mjs [--ref=origin/main]
  */
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";

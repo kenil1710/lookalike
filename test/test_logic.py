@@ -13,7 +13,7 @@ import re
 import unittest
 
 import stub
-from world import (LK, SRC, SAFELIST_SRC, World, Safelist, UserError, LIST_URL, token_url,
+from world import (LK, SRC, SAFELIST_SRC, World, Safelist, UserError, LIST_URL, RPC_URL,
                    ALICE, BOB, CAROL, DEPLOYER, OUTSIDER, HOUR, T0,
                    USDC_ETH, USDC_ARB, USDC_BASE, USDT_ETH, USDT0_ARB, USDCE_ARB, WETH_ETH,
                    F1, F2, F3, F4, F5, F6, F7)
@@ -39,8 +39,8 @@ class Base(unittest.TestCase):
             self.assertIn(match, str(cm.exception))
         return str(cm.exception)
 
-    def fake(self, chain, token, name, symbol, decimals="6", type_="ERC-20"):
-        self.web.token(chain, token, name, symbol, decimals, type_)
+    def fake(self, chain, token, name, symbol, decimals="6", type_="ERC-20", **kw):
+        self.web.token(chain, token, name, symbol, decimals, type_, **kw)
 
 
 # =============================================================================
@@ -173,30 +173,80 @@ class TestParseLabel(unittest.TestCase):
             self.assertEqual(LK.parse_label(bad), "", repr(bad))
 
 
-class TestOfficialFor(unittest.TestCase):
-    TRACKED = [1, 8453, 42161, 10, 137]
+class TestOfficialList(unittest.TestCase):
+    """Hardening 2: the entry that makes a token OFFICIAL must carry the case's
+    chainId AND the case's address AND one of the coin's symbols."""
 
     def test_chain_present(self):
         rows = [{"chainId": 1, "symbol": "USDC", "address": USDC_ETH}]
-        self.assertEqual(LK.official_for(rows, 1, ["USDC"], self.TRACKED), [USDC_ETH.lower()])
+        self.assertEqual(LK.official_for(rows, 1, ["USDC"]), [USDC_ETH.lower()])
 
     def test_chain_absent_is_empty(self):
         rows = [{"chainId": 1, "symbol": "USDC", "address": USDC_ETH}]
-        self.assertEqual(LK.official_for(rows, 8453, ["USDC"], self.TRACKED), [])
-
-    def test_not_covered_anywhere_is_failure(self):
-        rows = [{"chainId": 501000101, "symbol": "USDC", "address": "x"}]
-        self.assertIsNone(LK.official_for(rows, 1, ["USDC"], self.TRACKED))
+        self.assertEqual(LK.official_for(rows, 8453, ["USDC"]), [])
 
     def test_symbol_exact(self):
         rows = [{"chainId": 1, "symbol": "USDC", "address": USDC_ETH},
                 {"chainId": 1, "symbol": "USDC.e", "address": F1}]
-        self.assertEqual(LK.official_for(rows, 1, ["USDC"], self.TRACKED), [USDC_ETH.lower()])
+        self.assertEqual(LK.official_for(rows, 1, ["USDC"]), [USDC_ETH.lower()])
 
     def test_junk_rows_ignored(self):
         rows = ["x", None, {"chainId": 1, "symbol": "USDC", "address": "nope"},
                 {"chainId": 1, "symbol": "USDC", "address": USDC_ETH}]
-        self.assertEqual(LK.official_for(rows, 1, ["USDC"], self.TRACKED), [USDC_ETH.lower()])
+        self.assertEqual(LK.official_for(rows, 1, ["USDC"]), [USDC_ETH.lower()])
+
+    def test_match_binds_chain_address_symbol(self):
+        rows = [{"chainId": 1, "symbol": "USDC", "address": USDC_ETH}]
+        self.assertEqual(LK.list_match(rows, 1, USDC_ETH.lower(), ["USDC"]),
+                         {"chainId": 1, "address": USDC_ETH.lower(), "symbol": "USDC"})
+
+    def test_match_wrong_chain(self):
+        # The Ethereum USDC address on Base is not official on Base.
+        rows = [{"chainId": 1, "symbol": "USDC", "address": USDC_ETH}]
+        self.assertIsNone(LK.list_match(rows, 8453, USDC_ETH.lower(), ["USDC"]))
+
+    def test_match_wrong_symbol(self):
+        rows = [{"chainId": 42161, "symbol": "USDC.e", "address": USDCE_ARB}]
+        self.assertIsNone(LK.list_match(rows, 42161, USDCE_ARB.lower(), ["USDC"]))
+
+    def test_match_string_chain_id_rejected(self):
+        rows = [{"chainId": "1", "symbol": "USDC", "address": USDC_ETH}]
+        self.assertIsNone(LK.list_match(rows, 1, USDC_ETH.lower(), ["USDC"]))
+
+    def test_decide_needs_bound_match(self):
+        f = LK.text_facts("USDC", "USDC", "usd-coin")
+        f.update({"type": "ERC-20", "decimals": "6"})
+        tok = USDC_ETH.lower()
+        bad = {"chainId": 8453, "address": tok, "symbol": "USDC"}
+        self.assertEqual(LK.decide(tok, f, [tok], bad, 1, "usd-coin")["basis"], "EXACT_COPY")
+        good = {"chainId": 1, "address": tok, "symbol": "USDC"}
+        self.assertEqual(LK.decide(tok, f, [tok], good, 1, "usd-coin")["basis"], "OFFICIAL_LIST")
+
+
+class TestAbi(unittest.TestCase):
+    def test_string(self):
+        from world import abi_string
+        self.assertEqual(LK.abi_string(abi_string("USD Coin")), "USD Coin")
+
+    def test_unicode_string(self):
+        from world import abi_string
+        self.assertEqual(LK.abi_string(abi_string("U\ufeffSD\u0421")), "U\ufeffSD\u0421")
+
+    def test_bytes32(self):
+        from world import abi_bytes32
+        self.assertEqual(LK.abi_string(abi_bytes32("MKR")), "MKR")
+
+    def test_long_string_full(self):
+        from world import abi_string
+        self.assertEqual(LK.abi_string(abi_string("x" * 5000)), "x" * 5000)
+
+    def test_bad(self):
+        for bad in [None, "", "0x", "0x12", "zz", "0x" + "00" * 31, "0x" + "ff" * 64]:
+            self.assertIsNone(LK.abi_string(bad), repr(bad))
+
+    def test_uint(self):
+        self.assertEqual(LK.abi_uint("0x" + "00" * 31 + "06"), 6)
+        self.assertIsNone(LK.abi_uint("0x06"))
 
 
 # =============================================================================
@@ -249,9 +299,10 @@ class TestRules(Base):
         self.assertEqual((self.w.state(cid), self.w.basis(cid)), ("IMPERSONATOR", "EXACT_COPY"))
         self.assertEqual(stub.MODEL.calls, 0)
 
-    def test_r5_tether_on_base_no_official(self):
-        self.fake("base", F1, "Tether USD", "USDT")
-        cid = self.w.flag("base", F1, "tether")
+    def test_r5_tether_copy_on_arbitrum(self):
+        # Arbitrum's official Tether is listed as USDT0; a plain "USDT" is a copy.
+        self.fake("arbitrum", F1, "USDT", "USDT")
+        cid = self.w.flag("arbitrum", F1, "tether")
         self.assertEqual(self.w.basis(cid), "EXACT_COPY")
 
     def test_r5_lowercase_symbol_is_exact(self):
@@ -266,9 +317,9 @@ class TestRules(Base):
         self.assertEqual((self.w.state(cid), self.w.basis(cid)), ("VARIANT", "MODEL"))
 
     def test_r6_variant(self):
-        self.fake("arbitrum", USDCE_ARB, "Arbitrum Bridged USDC (Arbitrum)", "USDC.E")
+        self.fake("arbitrum", F3, "Arbitrum Bridged USDC (Arbitrum)", "USDC.E")
         stub.MODEL.serve("VARIANT")
-        cid = self.w.flag("arbitrum", USDCE_ARB, "usd-coin")
+        cid = self.w.flag("arbitrum", F3, "usd-coin")
         self.assertEqual((self.w.state(cid), self.w.basis(cid)), ("VARIANT", "MODEL"))
         self.assertEqual(stub.MODEL.calls, 2)   # leader + validator each ask
 
@@ -285,9 +336,9 @@ class TestRules(Base):
         self.assertEqual((self.w.state(cid), self.w.basis(cid)), ("IMPERSONATOR", "MODEL"))
 
     def test_r6_prompt_inputs(self):
-        self.fake("arbitrum", USDCE_ARB, "Bridged USDC", "USDC.e")
+        self.fake("arbitrum", F3, "Bridged USDC", "USDC.e")
         stub.MODEL.serve("VARIANT")
-        self.w.flag("arbitrum", USDCE_ARB, "usd-coin")
+        self.w.flag("arbitrum", F3, "usd-coin")
         p = stub.MODEL.prompts[0]
         data = json.loads(p.split("DATA:\n", 1)[1].split("\n", 1)[0])
         self.assertEqual(data["chain"], "arbitrum")
@@ -297,29 +348,56 @@ class TestRules(Base):
         self.assertEqual(data["coin_has_official_deployment_on_this_chain"], "yes")
         self.assertEqual(data["coin_symbol"], "USDC")
 
-    def test_r6_prompt_no_official_on_chain(self):
-        self.fake("polygon", F1, "Bridged Tether", "USDT.e")
-        stub.MODEL.serve("VARIANT")
-        self.w.flag("polygon", F1, "tether")
-        data = json.loads(stub.MODEL.prompts[0].split("DATA:\n", 1)[1].split("\n", 1)[0])
-        self.assertEqual(data["coin_has_official_deployment_on_this_chain"], "no")
-
     def test_r6_model_garbage_stays_pending(self):
-        self.fake("arbitrum", USDCE_ARB, "Bridged USDC", "USDC.e")
+        self.fake("arbitrum", F3, "Bridged USDC", "USDC.e")
         for bad in [{"label": "SAFE"}, {"verdict": "VARIANT"}, "VARIANT", {"label": "VARIANT", "x": 1}]:
             w = World()
-            w.web.token("arbitrum", USDCE_ARB, "Bridged USDC", "USDC.e")
+            w.web.token("arbitrum", F3, "Bridged USDC", "USDC.e")
             stub.MODEL.serve_raw(bad)
-            cid = w.flag("arbitrum", USDCE_ARB, "usd-coin")
+            cid = w.flag("arbitrum", F3, "usd-coin")
             self.assertEqual(w.state(cid), "PENDING", repr(bad))
             self.assertEqual(w.case(cid)["history"], [])
 
     def test_r6_model_error_stays_pending(self):
-        self.fake("arbitrum", USDCE_ARB, "Bridged USDC", "USDC.e")
+        self.fake("arbitrum", F3, "Bridged USDC", "USDC.e")
         stub.MODEL.serve("VARIANT")
         stub.MODEL.fail(2)
-        cid = self.w.flag("arbitrum", USDCE_ARB, "usd-coin")
+        cid = self.w.flag("arbitrum", F3, "usd-coin")
         self.assertEqual(self.w.state(cid), "PENDING")
+
+    def test_r2b_listed_bridged_usdc_real_onchain_shape(self):
+        # Arbitrum USDC.e on chain says "USD Coin (Arb1)" / "USDC"; the list
+        # carries that exact address as USDC.e "Bridged USDC".
+        self.fake("arbitrum", USDCE_ARB, "USD Coin (Arb1)", "USDC")
+        for row in self.web.list_tokens:
+            if row["address"] == USDCE_ARB:
+                row["name"] = "Bridged USDC"
+        self.web.publish_list()
+        cid = self.w.flag("arbitrum", USDCE_ARB, "usd-coin")
+        self.assertEqual((self.w.state(cid), self.w.basis(cid)), ("VARIANT", "LISTED_VARIANT"))
+        self.assertEqual(stub.MODEL.calls, 0)
+        self.assertEqual(self.w.case(cid)["list_entry"]["symbol"], "USDC.e")
+
+    def test_r2b_listed_other_asset(self):
+        self.web.list_tokens.append({"chainId": 42161, "symbol": "GMX", "name": "GMX", "address": F4})
+        self.web.publish_list()
+        self.fake("arbitrum", F4, "USDC", "USDC")
+        cid = self.w.flag("arbitrum", F4, "usd-coin")
+        self.assertEqual((self.w.state(cid), self.w.basis(cid)), ("UNRELATED", "LISTED_OTHER"))
+
+    def test_r2b_needs_same_chain(self):
+        # Listed as USDC.e on Arbitrum does not help the same address elsewhere.
+        self.fake("optimism", USDCE_ARB, "USDC", "USDC")
+        cid = self.w.flag("optimism", USDCE_ARB, "usd-coin")
+        self.assertEqual(self.w.basis(cid), "EXACT_COPY")
+
+    def test_r2b_precedent_skips_listed(self):
+        self.fake("arbitrum", F1, "USD Coin (Arb1)", "USDC")
+        p = self.w.flag("arbitrum", F1, "usd-coin")
+        self.assertEqual(self.w.basis(p), "EXACT_COPY")
+        self.fake("arbitrum", USDCE_ARB, "USD Coin (Arb1)", "USDC")
+        out = json.loads(self.w.call(BOB, "flag_by_precedent", "arbitrum", [USDCE_ARB], p))
+        self.assertEqual(out["skipped"][0]["reason"], "ON_LIST_AS_OTHER_ASSET")
 
     def test_rule_order_official_beats_exact(self):
         self.fake("arbitrum", USDC_ARB, "USDC", "USDC")
@@ -335,8 +413,8 @@ class TestRules(Base):
         for coin, sym in [("weth", "WETH"), ("dai", "DAI"), ("wrapped-bitcoin", "WBTC"),
                           ("tether", "USDT"), ("usd-coin", "USDC")]:
             w = World()
-            w.web.token("base", F2, sym, sym)
-            cid = w.flag("base", F2, coin)
+            w.web.token("polygon", F2, sym, sym)
+            cid = w.flag("polygon", F2, coin)
             self.assertEqual(w.basis(cid), "EXACT_COPY", coin)
 
     def test_each_chain(self):
@@ -486,31 +564,50 @@ class T4ForgedLeader(Base):
         self.fake("arbitrum", F1, "USDC", "USDC")
         self.w.flag("arbitrum", F1, "usd-coin")
         urls = [u for u, _h in stub.CALLS]
-        self.assertEqual(urls.count(token_url("arbitrum", F1)), 2)
+        self.assertEqual(urls.count(RPC_URL["arbitrum"]), 2)
         self.assertEqual(urls.count(LIST_URL), 2)
 
-    def test_validator_sees_different_page(self):
-        # The page changed between leader and validator: no agreement, no ruling.
-        url = token_url("arbitrum", F1)
-        stub.SEQ[url] = [(200, json.dumps({"address_hash": F1, "name": "USDC", "symbol": "USDC",
-                                           "decimals": "6", "type": "ERC-20"})),
-                         (200, json.dumps({"address_hash": F1, "name": "USDC", "symbol": "USDC2",
-                                           "decimals": "6", "type": "ERC-20"}))]
+    def test_validator_sees_different_chain_answer(self):
+        # The chain answered differently to leader and validator: no agreement, no ruling.
+        self.fake("arbitrum", F1, "USDC", "USDC")
+        chain = self.web.chains["arbitrum"]
+        real = chain.answer
+
+        def once_renamed(body):
+            chain.tokens[F1]["symbol"] = "USDC2"
+            out = (200, json.dumps([real(r) for r in json.loads(body)]))
+            chain.tokens[F1]["symbol"] = "USDC"
+            return out
+        chain.queue = [lambda body: (200, json.dumps([real(r) for r in json.loads(body)])), once_renamed]
         cid = self.w.flag("arbitrum", F1, "usd-coin")
+        self.assertFalse(stub.LAST["agreed"])
         self.assertEqual(self.w.state(cid), "PENDING")
 
-    def test_volatile_fields_ignored(self):
-        url = token_url("arbitrum", F1)
-        base = {"address_hash": F1, "name": "USDC", "symbol": "USDC", "decimals": "6", "type": "ERC-20"}
-        stub.SEQ[url] = [(200, json.dumps(dict(base, holders_count="10", exchange_rate="1.0"))),
-                         (200, json.dumps(dict(base, holders_count="11", exchange_rate="0.9")))]
-        cid = self.w.flag("arbitrum", F1, "usd-coin")
-        self.assertEqual(self.w.state(cid), "IMPERSONATOR")
+    def test_forged_type_rejected(self):
+        self.fake("arbitrum", F1, "USDC", "USDC", type_="ERC-721")
+
+        def forge(r):
+            d = json.loads(r)
+            d["tokens"][F1]["type"] = "ERC-20"
+            return LK._canon(d)
+        stub.FORGE["mutate"] = forge
+        self.assertEqual(self.w.state(self.w.flag("arbitrum", F1, "usd-coin")), "PENDING")
+
+    def test_forged_list_match_rejected(self):
+        self.fake("arbitrum", F1, "USDC", "USDC")
+
+        def forge(r):
+            d = json.loads(r)
+            d["matches"][F1] = {"chainId": 42161, "address": F1, "symbol": "USDC"}
+            d["official"] = sorted(d["official"] + [F1])
+            return LK._canon(d)
+        stub.FORGE["mutate"] = forge
+        self.assertEqual(self.w.state(self.w.flag("arbitrum", F1, "usd-coin")), "PENDING")
 
 
 class T5Outage(Base):
     def test_outage_expire_reflag(self):
-        self.web.down(token_url("arbitrum", F1))
+        self.web.down_token("arbitrum", F1)
         cid = self.w.flag("arbitrum", F1, "usd-coin")
         self.assertEqual(self.w.state(cid), "PENDING")
         self.assertEqual(self.w.c.cases[cid - 1].evidence, "")
@@ -528,7 +625,7 @@ class T5Outage(Base):
         self.assertEqual(json.loads(self.w.view("get_status", "arbitrum", F1))["cases"][0]["case_id"], cid2)
 
     def test_rule_succeeds_after_outage(self):
-        self.web.down(token_url("arbitrum", F1))
+        self.web.down_token("arbitrum", F1)
         cid = self.w.flag("arbitrum", F1, "usd-coin")
         self.w.advance(HOUR)
         self.fake("arbitrum", F1, "USDC", "USDC")
@@ -537,24 +634,62 @@ class T5Outage(Base):
 
     def test_list_down(self):
         self.fake("arbitrum", F1, "USDC", "USDC")
-        self.web.down(LIST_URL)
+        self.web.down_list()
         self.assertEqual(self.w.state(self.w.flag("arbitrum", F1, "usd-coin")), "PENDING")
 
-    def test_blockscout_404(self):
-        self.web.raw(token_url("arbitrum", F1), 404, '{"message":"Not found"}')
+    def test_rpc_http_error(self):
+        self.fake("arbitrum", F1, "USDC", "USDC")
+        self.web.down_rpc("arbitrum")
         self.assertEqual(self.w.state(self.w.flag("arbitrum", F1, "usd-coin")), "PENDING")
 
-    def test_blockscout_non_json(self):
-        self.web.raw(token_url("arbitrum", F1), 200, "<html>maintenance</html>")
+    def test_rpc_non_json(self):
+        self.fake("arbitrum", F1, "USDC", "USDC")
+        self.web.chains["arbitrum"].raw_body = "<html>maintenance</html>"
         self.assertEqual(self.w.state(self.w.flag("arbitrum", F1, "usd-coin")), "PENDING")
 
-    def test_blockscout_wrong_address(self):
-        self.web.token("arbitrum", F1, "USDC", "USDC", address_hash=F2)
+    def test_rpc_not_a_batch(self):
+        self.fake("arbitrum", F1, "USDC", "USDC")
+        self.web.chains["arbitrum"].raw_body = json.dumps({"jsonrpc": "2.0", "id": 1, "result": "0x"})
         self.assertEqual(self.w.state(self.w.flag("arbitrum", F1, "usd-coin")), "PENDING")
 
-    def test_blockscout_bad_types(self):
-        self.web.raw(token_url("arbitrum", F1), 200, json.dumps({"address_hash": F1, "name": 5,
-                                                                  "symbol": "USDC", "type": "ERC-20"}))
+    def test_rpc_missing_reply(self):
+        self.fake("arbitrum", F1, "USDC", "USDC")
+        chain = self.web.chains["arbitrum"]
+        real = chain.answer
+        chain.queue = [lambda b: (200, json.dumps([real(r) for r in json.loads(b)][:5]))] * 2
+        self.assertEqual(self.w.state(self.w.flag("arbitrum", F1, "usd-coin")), "PENDING")
+
+    def test_rpc_node_error_is_failure_not_revert(self):
+        self.fake("arbitrum", F1, "USDC", "USDC")
+        self.web.down_token("arbitrum", F1)
+        self.assertEqual(self.w.state(self.w.flag("arbitrum", F1, "usd-coin")), "PENDING")
+
+    def test_no_contract_is_failure(self):
+        # Nothing deployed at that address on that chain (e.g. the Ethereum
+        # USDC address on Base): stays PENDING, like an explorer 404.
+        self.assertEqual(self.w.state(self.w.flag("base", USDC_ETH, "usd-coin")), "PENDING")
+
+    def test_delegated_eoa_is_failure(self):
+        chain = self.web.chains["ethereum"]
+        real = chain.answer
+
+        def eoa(b):
+            out = [real(r) for r in json.loads(b)]
+            out[0]["result"] = "0xef01005a7fc11397e9a8ad41bf10bf13f22b0a63f96f6d"
+            return (200, json.dumps(out))
+        chain.queue = [eoa, eoa]
+        self.assertEqual(self.w.state(self.w.flag("ethereum", F1, "usd-coin")), "PENDING")
+
+    def test_list_truncated(self):
+        self.fake("arbitrum", F1, "USDC", "USDC")
+        full = json.dumps({"name": "Uniswap Labs Default", "tokens": self.web.list_tokens})
+        self.web.publish_list(full[: len(full) // 2])
+        self.assertEqual(self.w.state(self.w.flag("arbitrum", F1, "usd-coin")), "PENDING")
+
+    def test_list_too_short(self):
+        self.fake("arbitrum", F1, "USDC", "USDC")
+        self.web.list_tokens = self.web.list_tokens[:30]
+        self.web.publish_list()
         self.assertEqual(self.w.state(self.w.flag("arbitrum", F1, "usd-coin")), "PENDING")
 
     def test_list_non_json(self):
@@ -568,14 +703,14 @@ class T5Outage(Base):
         self.assertEqual(self.w.state(self.w.flag("arbitrum", F1, "usd-coin")), "PENDING")
 
     def test_expired_not_impersonator(self):
-        self.web.down(token_url("arbitrum", F1))
+        self.web.down_token("arbitrum", F1)
         cid = self.w.flag("arbitrum", F1, "usd-coin")
         self.w.advance(6 * HOUR)
         self.w.call(BOB, "expire", cid)
         self.assertFalse(self.w.view("is_impersonator", "arbitrum", F1))
 
     def test_deadline_exact_boundary(self):
-        self.web.down(token_url("arbitrum", F1))
+        self.web.down_token("arbitrum", F1)
         cid = self.w.flag("arbitrum", F1, "usd-coin")
         self.w.advance(6 * HOUR - 1)
         self.w.call(BOB, "rule", cid)
@@ -598,7 +733,7 @@ class T6Validation(Base):
             self.refused(self.w.call, ALICE, "flag", "ethereum", bad, "usd-coin", match="0x-prefixed")
 
     def test_key_taken_pending(self):
-        self.web.down(token_url("arbitrum", F1))
+        self.web.down_token("arbitrum", F1)
         self.w.flag("arbitrum", F1, "usd-coin")
         self.refused(self.w.call, BOB, "flag", "arbitrum", F1, "usd-coin", match="already exists")
 
@@ -635,7 +770,7 @@ class T6Validation(Base):
         self.refused(self.w.call, BOB, "expire", cid, match="not pending")
 
     def test_recheck_pending_or_expired(self):
-        self.web.down(token_url("arbitrum", F1))
+        self.web.down_token("arbitrum", F1)
         cid = self.w.flag("arbitrum", F1, "usd-coin")
         self.w.advance(2 * HOUR)
         self.refused(self.w.call, BOB, "recheck", cid, match="only a ruled case")
@@ -706,7 +841,7 @@ class T7Precedent(Base):
     def test_mixed_batch_not_reverted(self):
         self.fake("arbitrum", F2, self.name, self.sym)
         self.fake("arbitrum", F3, "USDC", "USDC")
-        self.web.down(token_url("arbitrum", F4))
+        self.web.down_token("arbitrum", F4)
         out = self.batch([F2, F3, F4, F1, F2])
         self.assertEqual([x["token"] for x in out["flagged"]], [F2])
         reasons = {(s["token"], s["reason"]) for s in out["skipped"]}
@@ -739,7 +874,7 @@ class T7Precedent(Base):
         self.refused(self.w.call, BOB, "flag_by_precedent", "ethereum", [F2], off, match="precedent must be")
 
     def test_precedent_pending_refused(self):
-        self.web.down(token_url("base", F5))
+        self.web.down_token("base", F5)
         pend = self.w.flag("base", F5, "usd-coin")
         self.refused(self.w.call, BOB, "flag_by_precedent", "base", [F2], pend, match="precedent must be")
 
@@ -763,7 +898,7 @@ class T7Precedent(Base):
         self.assertEqual(len(self.batch([F6], pid=ep, chain="base")["flagged"]), 1)
 
     def test_expired_key_can_be_taken_by_precedent(self):
-        self.web.down(token_url("arbitrum", F2))
+        self.web.down_token("arbitrum", F2)
         old = self.w.flag("arbitrum", F2, "usd-coin")
         self.w.advance(6 * HOUR)
         self.w.call(BOB, "expire", old)
@@ -772,7 +907,7 @@ class T7Precedent(Base):
 
     def test_list_down_skips_all(self):
         self.fake("arbitrum", F2, self.name, self.sym)
-        self.web.down(LIST_URL)
+        self.web.down_list()
         out = self.batch([F2])
         self.assertEqual(out["skipped"], [{"token": F2, "reason": "EVIDENCE_UNAVAILABLE"}])
 
@@ -796,8 +931,11 @@ class T8RenameRecheck(Base):
         out = json.loads(self.w.call(BOB, "recheck", cid))
         self.assertEqual(out, {"state": "UNRELATED", "changed": True, "basis": "NO_BRAND_MATCH"})
         c = self.w.case(cid)
-        self.assertEqual([(h["label"], h["basis"], h["symbol"]) for h in c["history"]],
-                         [("IMPERSONATOR", "EXACT_COPY", "USDC"), ("UNRELATED", "NO_BRAND_MATCH", "HPTS")])
+        self.assertEqual([(h["label"], h["basis"]) for h in c["history"]],
+                         [("IMPERSONATOR", "EXACT_COPY"), ("UNRELATED", "NO_BRAND_MATCH")])
+        self.assertEqual(c["history"][0]["symbol_sha256"], LK._sha("USDC"))
+        self.assertEqual(c["history"][1]["symbol_sha256"], LK._sha("HPTS"))
+        self.assertEqual(c["symbol"], "HPTS")
         self.assertEqual(c["rechecks"], 1)
         self.assertFalse(self.w.view("is_impersonator", "arbitrum", F1))
         self.assertEqual(json.loads(self.w.view("stats"))["rechecks"], 1)
@@ -818,7 +956,7 @@ class T8RenameRecheck(Base):
         cid = self.w.flag("arbitrum", F1, "usd-coin")
         before = self.w.snapshot()
         self.w.advance(HOUR)
-        self.web.down(token_url("arbitrum", F1))
+        self.web.down_token("arbitrum", F1)
         out = json.loads(self.w.call(BOB, "recheck", cid))
         self.assertEqual((out["state"], out["changed"]), ("IMPERSONATOR", False))
         self.assertEqual(self.w.snapshot(), before)
@@ -874,12 +1012,15 @@ class T9ListShape(Base):
         self.web.publish_list(json.dumps({"tokens": {"1": []}}))
         self.assertEqual(self.w.state(self.w.flag("arbitrum", F1, "usd-coin")), "PENDING")
 
-    def test_chain_absent_means_no_official(self):
-        # Tether has no Base entry on the list: official is [] and a copy is a copy.
-        self.fake("base", F1, "Tether USD", "USDT")
-        cid = self.w.flag("base", F1, "tether")
-        self.assertEqual(self.w.state(cid), "IMPERSONATOR")
-        self.assertEqual(self.w.case(cid)["official_addresses"], [])
+    def test_chain_absent_now_is_failure(self):
+        # A covered pair whose entry vanished from the list: evidence failure,
+        # never "official = []".
+        self.web.list_tokens = [r for r in self.web.list_tokens
+                                if not (r["chainId"] == 137 and r["symbol"] == "USDT")]
+        self.web.publish_list()
+        self.fake("polygon", F1, "Tether USD", "USDT")
+        cid = self.w.flag("polygon", F1, "tether")
+        self.assertEqual(self.w.state(cid), "PENDING")
 
     def test_coin_absent_everywhere_is_failure(self):
         self.web.list_tokens = [r for r in self.web.list_tokens if r["symbol"] != "DAI"]
@@ -948,7 +1089,7 @@ class T11NoSafeWording(Base):
         self.fake("ethereum", USDC_ETH, "USDC", "USDC")
         self.fake("arbitrum", F1, "USDC", "USDC")
         self.fake("arbitrum", F2, "Bridged USDC", "USDC.e")
-        self.web.down(token_url("arbitrum", F3))
+        self.web.down_token("arbitrum", F3)
         stub.MODEL.serve("VARIANT")
         ids = [self.w.flag("ethereum", USDC_ETH, "usd-coin"), self.w.flag("arbitrum", F1, "usd-coin"),
                self.w.flag("arbitrum", F2, "usd-coin"), self.w.flag("arbitrum", F3, "usd-coin")]
@@ -975,7 +1116,7 @@ class T12NoChangeOnRevert(Base):
     def test_every_refusal_leaves_state(self):
         self.fake("arbitrum", F1, "USDC", "USDC")
         cid = self.w.flag("arbitrum", F1, "usd-coin")
-        self.web.down(token_url("arbitrum", F2))
+        self.web.down_token("arbitrum", F2)
         pend = self.w.flag("arbitrum", F2, "usd-coin")
         calls = [
             ("flag", "bsc", F3, "usd-coin"), ("flag", "arbitrum", "0x1", "usd-coin"),
@@ -1003,6 +1144,200 @@ class T12NoChangeOnRevert(Base):
         self.assertEqual(len(stub.CALLS), n)
 
 
+class TestCoverageGate(Base):
+    """Hardening 3: only (coin, chain) pairs the official list covers."""
+
+    def test_table_frozen(self):
+        cfg = json.loads(self.w.view("get_config"))
+        self.assertEqual(cfg["coverage"], LK.COVERAGE)
+        self.assertNotIn("base", cfg["coverage"]["tether"])
+        self.assertNotIn("base", cfg["coverage"]["wrapped-bitcoin"])
+        self.assertEqual(sum(len(v) for v in cfg["coverage"].values()), 23)
+
+    def test_table_matches_default_list(self):
+        # Every covered pair has a list entry in the test list and vice versa.
+        rows = self.web.list_tokens
+        for coin, c in LK.COIN_TABLE.items():
+            for chain, (_u, cid) in LK.CHAIN_TABLE.items():
+                has = any(r["chainId"] == cid and r["symbol"] in c["list_symbols"] for r in rows)
+                self.assertEqual(has, chain in LK.COVERAGE[coin], (coin, chain))
+
+    def test_flag_uncovered_refused(self):
+        self.fake("base", F1, "Tether USD", "USDT")
+        self.refused(self.w.call, ALICE, "flag", "base", F1, "tether", match="does not cover")
+        self.refused(self.w.call, ALICE, "flag", "base", F1, "wrapped-bitcoin", match="does not cover")
+        self.assertEqual(len(stub.CALLS), 0)
+
+    def test_precedent_uncovered_refused(self):
+        self.fake("ethereum", F1, "USDT", "USDT")
+        p = self.w.flag("ethereum", F1, "tether")
+        self.fake("base", F2, "USDT", "USDT")
+        self.refused(self.w.call, BOB, "flag_by_precedent", "base", [F2], p, match="does not cover")
+
+    def test_real_coin_missing_from_list_never_impersonator(self):
+        # The real Tether on a chain whose list entry disappeared, with every
+        # model answer: never IMPERSONATOR.
+        self.web.list_tokens = [r for r in self.web.list_tokens
+                                if not (r["chainId"] == 137 and r["symbol"] == "USDT")]
+        self.web.publish_list()
+        real = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"
+        self.fake("polygon", real, "(PoS) Tether USD", "USDT")
+        stub.MODEL.serve("IMPERSONATOR")
+        cid = self.w.flag("polygon", real, "tether")
+        self.assertEqual(self.w.state(cid), "PENDING")
+        self.assertFalse(self.w.view("is_impersonator", "polygon", real))
+
+    def test_real_coin_on_uncovered_chain_never_impersonator(self):
+        self.fake("base", F1, "Tether USD", "USDT")
+        with self.assertRaises(UserError):
+            self.w.call(ALICE, "flag", "base", F1, "tether")
+        self.assertFalse(self.w.view("is_impersonator", "base", F1))
+
+    def test_rules_4_5_need_official_entry(self):
+        f = LK.text_facts("USDC", "USD\u0421", "usd-coin")
+        f.update({"type": "ERC-20", "decimals": "6"})
+        self.assertEqual(LK.decide(F1, f, [], None, 1, "usd-coin")["label"], "MODEL")
+        g = LK.text_facts("USDC", "USDC", "usd-coin")
+        g.update({"type": "ERC-20", "decimals": "6"})
+        self.assertEqual(LK.decide(F1, g, [], None, 1, "usd-coin")["label"], "MODEL")
+        self.assertEqual(LK.decide(F1, g, [USDC_ETH.lower()], None, 1, "usd-coin")["basis"], "EXACT_COPY")
+
+
+class TestChainEvidence(Base):
+    """Hardening 1: name/symbol/decimals come from eth_call, not an explorer."""
+
+    def test_bytes32_name(self):
+        self.fake("ethereum", F1, "USDC", "USDC", bytes32=True)
+        self.assertEqual(self.w.basis(self.w.flag("ethereum", F1, "usd-coin")), "EXACT_COPY")
+
+    def test_no_decimals_is_not_erc20(self):
+        self.fake("ethereum", F1, "USDC", "USDC", decimals=None)
+        cid = self.w.flag("ethereum", F1, "usd-coin")
+        self.assertEqual((self.w.state(cid), self.w.basis(cid)), ("UNRELATED", "NOT_ERC20"))
+
+    def test_nft_is_not_erc20(self):
+        self.fake("ethereum", F1, "USDC", "USDC", type_="ERC-721")
+        self.assertEqual(self.w.basis(self.w.flag("ethereum", F1, "usd-coin")), "NOT_ERC20")
+        self.fake("ethereum", F2, "USDC", "USDC", type_="ERC-1155")
+        self.assertEqual(self.w.basis(self.w.flag("ethereum", F2, "usd-coin")), "NOT_ERC20")
+
+    def test_no_name_is_not_erc20(self):
+        self.web.chains["ethereum"].tokens[F1] = {"name": None, "symbol": "USDC", "type": "ERC-20",
+                                                 "bytes32": False, "decimals": 6}
+        self.assertEqual(self.w.basis(self.w.flag("ethereum", F1, "usd-coin")), "NOT_ERC20")
+
+    def test_decimals_over_255_not_erc20(self):
+        self.fake("ethereum", F1, "USDC", "USDC", decimals=256)
+        self.assertEqual(self.w.basis(self.w.flag("ethereum", F1, "usd-coin")), "NOT_ERC20")
+
+    def test_one_batch_per_validator(self):
+        self.fake("ethereum", F1, "USDC", "USDC")
+        self.w.flag("ethereum", F1, "usd-coin")
+        self.assertEqual(self.web.chains["ethereum"].requests, 2)
+
+    def test_request_is_the_expected_batch(self):
+        body = json.loads(LK._rpc_batch(F1))
+        self.assertEqual([r["method"] for r in body], ["eth_getCode"] + ["eth_call"] * 5)
+        self.assertEqual([r["params"][0]["data"][:10] for r in body[1:]],
+                         [LK.SEL_NAME, LK.SEL_SYMBOL, LK.SEL_DECIMALS, LK.SEL_SUPPORTS, LK.SEL_SUPPORTS])
+
+    def test_full_string_skeleton_past_cap(self):
+        # 200 filler characters, then the disguise: the display copy is cut at
+        # 128 but the rules see the whole string.
+        name = "x" * 200 + " USD \u0421oin"
+        self.fake("arbitrum", F1, name, "UCOIN")
+        stub.MODEL.serve("IMPERSONATOR")
+        cid = self.w.flag("arbitrum", F1, "usd-coin")
+        c = self.w.case(cid)
+        self.assertEqual(len(c["name"]), 128)
+        self.assertEqual(c["facts"]["name_len"], len(name))
+        self.assertTrue(c["facts"]["skeleton_name"].endswith("USDCOIN"))
+        self.assertTrue(c["facts"]["disguised"])
+
+    def test_symbol_disguise_past_cap_still_homoglyph(self):
+        sym = "USD\u0421"
+        name = "USD Coin" + "\u200b" * 300
+        self.fake("arbitrum", F1, name, sym)
+        self.assertEqual(self.w.basis(self.w.flag("arbitrum", F1, "usd-coin")), "HOMOGLYPH")
+
+
+class TestTextHardening(Base):
+    """Hardening 3: combining marks, bidi, unknown non-ASCII and digit
+    look-alikes."""
+
+    def test_combining_mark_stripped_and_disguise(self):
+        s = "U\u0335SDC"
+        self.assertEqual(LK.skeleton(s), "USDC")
+        self.assertTrue(LK.disguised(s))
+
+    def test_accented_letter(self):
+        self.assertEqual(LK.skeleton("\u00daSDC"), "USDC")
+        self.assertTrue(LK.disguised("\u00daSDC"))
+
+    def test_bidi_controls(self):
+        for cp in (0x202A, 0x202B, 0x202C, 0x202D, 0x202E, 0x2066, 0x2067, 0x2068, 0x2069, 0x200F):
+            s = "US" + chr(cp) + "DC"
+            self.assertEqual(LK.skeleton(s), "USDC", hex(cp))
+            self.assertTrue(LK.disguised(s), hex(cp))
+
+    def test_rtl_override_symbol_is_homoglyph(self):
+        # Symbol stored as U+202E "CDSU" renders as "USDC". The name is exactly
+        # the coin's name and the raw text holds a bidi control: rule 4.
+        self.fake("arbitrum", F1, "USD Coin", "\u202eCDSU\u202c")
+        cid = self.w.flag("arbitrum", F1, "usd-coin")
+        self.assertEqual(self.w.basis(cid), "HOMOGLYPH")
+
+    def test_rtl_override_alone_goes_to_model(self):
+        self.fake("arbitrum", F1, "Stable", "\u202eCDSU\u202c")
+        stub.MODEL.serve("IMPERSONATOR")
+        cid = self.w.flag("arbitrum", F1, "usd-coin")
+        self.assertEqual(self.w.basis(cid), "MODEL")
+
+    def test_combining_copy_ruled_homoglyph(self):
+        self.fake("arbitrum", F1, "USD Coin", "U\u0335SDC")
+        self.assertEqual(self.w.basis(self.w.flag("arbitrum", F1, "usd-coin")), "HOMOGLYPH")
+
+    def test_unknown_script_goes_to_model_not_unrelated(self):
+        # Armenian SEH in place of S: the code cannot read it, so rule 3 must not
+        # call it unrelated.
+        self.fake("arbitrum", F1, "U\u054fDC", "U\u054fDC")
+        stub.MODEL.serve("IMPERSONATOR")
+        cid = self.w.flag("arbitrum", F1, "usd-coin")
+        self.assertEqual((self.w.state(cid), self.w.basis(cid)), ("IMPERSONATOR", "MODEL"))
+        self.assertTrue(self.w.case(cid)["facts"]["unknown_chars"])
+
+    def test_emoji_blocks_exact_copy(self):
+        self.fake("arbitrum", F1, "USDC \U0001F680", "USDC")
+        stub.MODEL.serve("IMPERSONATOR")
+        self.assertEqual(self.w.basis(self.w.flag("arbitrum", F1, "usd-coin")), "MODEL")
+
+    def test_digit_lookalike_goes_to_model(self):
+        self.fake("arbitrum", F1, "U5D Coin", "U5DC")
+        stub.MODEL.serve("IMPERSONATOR")
+        cid = self.w.flag("arbitrum", F1, "usd-coin")
+        self.assertEqual(self.w.basis(cid), "MODEL")
+        data = json.loads(stub.MODEL.prompts[0].split("DATA:\n", 1)[1].split("\n", 1)[0])
+        self.assertEqual(data["symbol_with_digits_read_as_letters"], "USDC")
+
+    def test_digits_never_decide_by_code(self):
+        for sym in ("U5DC", "USD0", "W3TH", "D4I", "W8TC"):
+            f = LK.text_facts(sym, sym, "usd-coin")
+            f.update({"type": "ERC-20", "decimals": "6"})
+            self.assertNotIn(LK.decide(F1, f, [USDC_ETH.lower()], None, 1, "usd-coin")["basis"],
+                             ("HOMOGLYPH", "EXACT_COPY"), sym)
+
+    def test_plain_unrelated_still_decided_by_code(self):
+        self.fake("ethereum", F1, "Sky Dollar", "USDS")
+        self.assertEqual(self.w.basis(self.w.flag("ethereum", F1, "usd-coin")), "NO_BRAND_MATCH")
+
+    def test_no_raw_text_in_history(self):
+        self.fake("arbitrum", F1, "USDC", "USDC")
+        cid = self.w.flag("arbitrum", F1, "usd-coin")
+        h = self.w.case(cid)["history"][0]
+        self.assertNotIn("name", h)
+        self.assertNotIn("symbol", h)
+
+
 # =============================================================================
 # views
 # =============================================================================
@@ -1013,7 +1348,7 @@ class TestViews(Base):
         self.fake("ethereum", USDC_ETH, "USDC", "USDC")
         self.fake("arbitrum", F1, "USDC", "USDC")
         self.fake("arbitrum", F2, "Spark USDC", "SUSDC")
-        self.web.down(token_url("base", F3))
+        self.web.down_token("base", F3)
         stub.MODEL.serve("UNRELATED")
         return [self.w.flag("ethereum", USDC_ETH, "usd-coin"), self.w.flag("arbitrum", F1, "usd-coin"),
                 self.w.flag("arbitrum", F1, "tether"), self.w.flag("arbitrum", F2, "usd-coin"),
@@ -1066,7 +1401,7 @@ class TestViews(Base):
     def test_list_cases_limit_cap(self):
         for i in range(55):
             t = "0x" + ("%040x" % (i + 100))
-            self.web.down(token_url("base", t))
+            self.web.down_token("base", t)
             self.w.flag("base", t, "usd-coin")
         self.assertEqual(len(json.loads(self.w.view("list_cases", 0, 500))["cases"]), 50)
 
@@ -1089,7 +1424,7 @@ class TestViews(Base):
                                                  "stats", "get_config"]))
 
     def test_flag_returns_id_and_anyone_can_act(self):
-        self.web.down(token_url("base", F1))
+        self.web.down_token("base", F1)
         cid = self.w.flag("base", F1, "usd-coin", who=CAROL)
         self.assertEqual(cid, 1)
         self.w.advance(6 * HOUR)
@@ -1154,6 +1489,41 @@ class TestSafelist(Base):
         self.fake("arbitrum", F1, "Points", "PTS")
         self.w.call(BOB, "recheck", 2)
         self.s.add("arbitrum", F1)
+
+    def test_prune_after_later_ruling(self):
+        # Listed while unjudged, ruled an impersonator later, pruned by anyone.
+        self.fake("polygon", F5, "USDC", "USDC")
+        self.s.add("polygon", F5)
+        with self.assertRaises(UserError):
+            self.s.c.prune("polygon", F5)          # not ruled yet: nothing to prune
+        self.w.flag("polygon", F5, "usd-coin")
+        self.w._as(OUTSIDER)
+        out = json.loads(self.s.c.prune("polygon", F5.upper().replace("0X", "0x")))
+        self.assertTrue(out["pruned"])
+        self.assertEqual(self.s.tokens(), [])
+        self.assertEqual(json.loads(self.s.c.list_pruned())[0]["token"], F5)
+
+    def test_prune_not_listed(self):
+        with self.assertRaises(UserError):
+            self.s.c.prune("arbitrum", F1)
+
+    def test_prune_official_refused(self):
+        self.s.add("ethereum", USDC_ETH)
+        with self.assertRaises(UserError):
+            self.s.c.prune("ethereum", USDC_ETH)
+        self.assertEqual(len(self.s.tokens()), 1)
+
+    def test_readd_after_prune_and_recheck(self):
+        self.fake("polygon", F5, "USDC", "USDC")
+        self.s.add("polygon", F5)
+        cid = self.w.flag("polygon", F5, "usd-coin")
+        self.s.c.prune("polygon", F5)
+        self.w.advance(HOUR)
+        self.fake("polygon", F5, "Points", "PTS")
+        self.w.call(BOB, "recheck", cid)
+        self.s.add("polygon", F5)
+        self.assertEqual(len(self.s.tokens()), 1)
+        self.assertEqual(len(json.loads(self.s.c.list_pruned())), 1)
 
     def test_register_address(self):
         self.assertEqual(self.s.c.get_register(), self.w.address)
