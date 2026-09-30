@@ -100,3 +100,24 @@ One code rule closes them:
 - **Precedent (route G).** LISTED_COPY and HOMOGLYPH rulings can be precedents, as MODEL IMPERSONATOR rulings already could. PRECEDENT and VARIANT still cannot.
 - **Accepted trade-off (owner's decision).** An unlisted legitimate bridge that reuses a listed label is ruled IMPERSONATOR, for example Wormhole's USDC `0x41f7B8b9b897276b7AAE926a9016935280b44E97` on Ethereum. `recheck` clears it if the list adds it.
 - **The model** now only sees names that carry the brand but copy no listed label.
+
+## D17. Attacker round v3: six findings, one fix each
+
+The first three findings are high or medium severity:
+
+1. **Characters outside the table (high).** NFKC mapped the lunate sigma `Ϲ` to `Σ`, which was in no table, so it was dropped and `USDϹ` read as UNRELATED.
+   - Now: after normalising, any letter or number that is not A-Z/0-9 (and any bidi control) makes the text **unreadable**. Unreadable text is never ruled NO_BRAND_MATCH, and a listed-label match on it is HOMOGLYPH.
+   - Only spaces, punctuation, symbols (emoji, ®, ™, ℠) and control characters are dropped silently. `Σ ς` → C was added by hand.
+2. **The ERC-20 check (high).** A fake USDC that made `balanceOf(0)` or `totalSupply()` revert, or claimed ERC-721, was ruled NOT_ERC20 before the copy rule. These answers are written by the attacker.
+   - Now: only `name()`/`symbol()` decide. A token is judged whenever either decodes, and NOT_ERC20 means neither does.
+   - `totalSupply`, `balanceOf` and `supportsInterface` are no longer read (the batch is `eth_getCode`, `name`, `symbol`, `decimals`).
+3. **EIP-7702 (medium).** Code `0xef0100…` was treated as "no contract", so a fake run from a delegated account could never be ruled. Now it is read through `eth_call` like any token; only empty code is a failure.
+
+The other three:
+
+4. **Hidden tail (medium).** `USDC` + 60 spaces + `Bridged` in the symbol was not an exact label. For both name and symbol, the head (before the first line break, tab, control character or run of 3+ spaces) is now also compared.
+5. **Look-alikes with no normalised form (medium).** Lisu `ꓚ`, Cherokee `Ꮯ`, Armenian `Ս` went to the model with a false skeleton.
+   - The table now includes all 1,582 single-character entries of Unicode `confusables.txt` 18.0.0 whose prototype is one ASCII letter or digit. They are generated into the contract source, and hand entries override them.
+   - Unicode's data folds I-like letters into `l`, so label comparison treats I and L as equal.
+   - When text is unreadable the model gets the raw data only: no skeleton, no "copies no listed label".
+6. **™ and ℠ (low).** NFKC expanded them into `TM`/`SM`. They are now stripped before NFKC (with ® and ©) and are not a disguise.

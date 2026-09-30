@@ -58,3 +58,14 @@ Status legend: [ ] todo · [~] in progress · [x] done · [!] blocked (reason in
 - [x] dry run with live RPC + live list on every seed token
 - [x] redeploy CANONICAL, DEMO, SAFELIST from 3716431; reseed incl. hole tokens (H1-H10); M1-M4 twice, all runs agree
 - [x] verify_source; README, ADDRESSES.md, SEEDS.md; push
+
+## Attacker round v3 (2026-09-30)
+- [x] 1 unreadable characters: never NO_BRAND_MATCH; label match on them = HOMOGLYPH; Sigma/final sigma -> C
+- [x] 2 ERC-20: only name()/symbol() decide; totalSupply/balanceOf/supportsInterface not read
+- [x] 3 EIP-7702 delegated code read like a token
+- [x] 4 hidden tail: head of name and symbol compared with labels
+- [x] 5 Unicode confusables.txt 18.0.0 (1,582 entries) in the table; raw-only prompt for unreadable text
+- [x] 6 TM/SM (and R, C) stripped before NFKC
+- [x] all 25 v3 tests pass, merged into test_logic.py; full suite passes
+- [x] dry run of every seed token with live RPC: same rulings as before
+- [ ] redeploy, reseed (H1-H10, M1-M4 twice), verify_source, docs, push

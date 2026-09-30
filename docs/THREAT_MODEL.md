@@ -97,6 +97,15 @@ The controls keep the real listed USDC.e on Arbitrum, Polygon and Optimism VARIA
 
 *Residual:* a fake of a product the list does not carry (a fake axlUSDC) produces the same evidence as the real one; see Known limits in the README.
 
+## T10e. Attacker round v3  [`V3Hole*`, `V3Held*`]
+
+- **Look-alikes the tables missed.** Lunate sigma, Lisu, Cherokee, Armenian and ™/℠ expansion.
+- **The ERC-20 check.** A fake that makes `balanceOf(0)` or `totalSupply()` revert or claims ERC-721 in order to be ruled NOT_ERC20.
+- **EIP-7702.** A fake run from a delegated account being unreadable forever.
+- **Hidden tail.** A listed label followed by text a wallet does not show, in the symbol as well as the name.
+
+All are decided IMPERSONATOR by code now (DECISIONS D17). The V3Held tests pin the attacks that already failed: spacing, case, punctuation, emoji, labels after the storage cap, `bytes32` symbols, brand substrings, listed-variant checksum case, truncated lists, and null-vs-zero decimals in precedent matching.
+
 ## T11. The register is read as a safety badge  [`T11NoSafeWording`]
 
 No view, config or source line uses "safe", "verified", "trusted", "secure" or "legit". OFFICIAL is always explained as "on the Uniswap default token list for this chain under the coin's symbol at ruled_at". There is no money, no owner and no setter in the register.
