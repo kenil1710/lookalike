@@ -1,0 +1,9 @@
+test/node_modules/
+test/.accounts.json
+__pycache__/
+*.pyc
+.DS_Store
+scratch/
+test/probe_lookalike.py
+test/probe_lookalike.mjs
+scratch-probe.log
