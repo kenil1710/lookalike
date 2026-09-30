@@ -68,4 +68,4 @@ Status legend: [ ] todo · [~] in progress · [x] done · [!] blocked (reason in
 - [x] 6 TM/SM (and R, C) stripped before NFKC
 - [x] all 25 v3 tests pass, merged into test_logic.py; full suite passes
 - [x] dry run of every seed token with live RPC: same rulings as before
-- [ ] redeploy, reseed (H1-H10, M1-M4 twice), verify_source, docs, push
+- [x] redeploy from 6b399e6, reseed (H1-H10, M1-M4 twice; H6-H10 needed rule() retries after a 3-minute list outage), verify_source, docs, push

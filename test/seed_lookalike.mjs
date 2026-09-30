@@ -152,7 +152,12 @@ if (!process.argv.includes("--report")) {
   for (const [id, method, args, expected] of CANON) {
     const r = ev.steps[id];
     if (method !== "flag" || !r || r.actual !== "PENDING" || expected === "PENDING" || !r.case_id) continue;
-    await step(`${id}-rule`, "CANONICAL", "rule", [r.case_id], expected, `retry: the first read left case ${r.case_id} PENDING (the list could not be read); anyone may call rule() before the deadline`, flagCheck("CANONICAL", ...args));
+    for (let n = 1; n <= 3; n++) {
+      const rid = n === 1 ? `${id}-rule` : `${id}-rule${n}`;
+      if (Object.keys(ev.steps).some((k) => k.startsWith(`${id}-rule`) && ev.steps[k].match)) break;
+      if (n > 1 && !ev.steps[rid]) await sleep(60_000);
+      await step(rid, "CANONICAL", "rule", [r.case_id], expected, `retry ${n}: case ${r.case_id} was left PENDING because the evidence could not be read; anyone may call rule() before the deadline`, flagCheck("CANONICAL", ...args));
+    }
   }
 
   await step("S1", "SAFELIST", "add_token", ["ethereum", USDC_ETH], "added", "real USDC (CANONICAL case C7 is OFFICIAL)", async (out) => ({ actual: out.reverted ? `refused: ${out.revertReason}` : "added" }));
@@ -194,8 +199,10 @@ if (!process.argv.includes("--report")) {
 
 // --- docs/SEEDS.md ----------------------------------------------------------
 const scout = (chain, t) => (SCOUT[chain] ? `[${t}](${SCOUT[chain]}/token/${t})` : `\`${t}\``);
+const retriesOf = (k) => Object.keys(ev.steps).filter((x) => x.startsWith(`${k}-rule`)).sort();
 const order = ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12",
-  "H1", "H2", "H3", "H4", "H5", "H6", "H7", "H8", "H9", "H10", "H10-rule", "S1", "S2", "S3", "C13", "S4",
+  ...["H1", "H2", "H3", "H4", "H5", "H6", "H7", "H8", "H9", "H10"].flatMap((k) => [k, ...retriesOf(k)]),
+  "S1", "S2", "S3", "C13", "S4",
   "D1", "D2", "D3", "D4", "D5", "D6", "D7", "M1", "M2", "M3", "M4", "M1r", "M2r", "M3r", "M4r"];
 const rows = order.filter((k) => ev.steps[k]).map((k) => {
   const s = ev.steps[k];
@@ -205,10 +212,12 @@ const rows = order.filter((k) => ev.steps[k]).map((k) => {
     : s.method === "prune" ? `Safelist.prune ${s.args[0]} ${scout(s.args[0], s.args[1])} (from ${s.signer})`
     : `${s.method}(case ${s.args[0]})`;
   const cid = s.case_id ? ` (case ${s.case_id})` : "";
-  const ok = s.match ? "yes" : ev.steps[`${k}-rule`]?.match ? `PENDING first, ruled by ${k}-rule` : "**no**";
+  const base = k.replace(/-rule\d*$/, "");
+  const fixer = retriesOf(base).find((x) => ev.steps[x].match);
+  const ok = s.match ? "yes" : fixer ? `PENDING, ruled by ${fixer}` : "**no**";
   return `| ${k} | ${s.instance} | ${what}${cid} | ${s.note} | ${s.expected} | ${s.actual} | ${ok} | [${s.tx}](${X}/tx/${s.tx}) |`;
 });
-const retried = (k) => ev.steps[`${k}-rule`]?.match;
+const retried = (k) => retriesOf(k).some((x) => ev.steps[x].match);
 const mism = order.filter((k) => ev.steps[k] && !ev.steps[k].match && !retried(k)).map((k) => `- ${k}: expected ${ev.steps[k].expected}, got ${ev.steps[k].actual}. ${ev.steps[k].why ?? ""}`);
 const d5 = ev.steps.D5;
 const modelRows = ["M1", "M2", "M3", "M4"].filter((k) => ev.steps[k]).map((k) => `| ${k} (case ${ev.steps[k].case_id}) | ${ev.steps[k].note.replace(": model run 1", "")} | ${ev.steps[k].actual} | ${ev.steps[`${k}r`]?.actual ?? "not run"} |`);
