@@ -48,7 +48,7 @@ A default token list has a maintainer. `Safelist.add_token` is curator-only (the
 
 ## D9. Deployer key
 
-The first instances were deployed from the local test key in `test/.accounts.json`. From the hardening round on, CANONICAL, DEMO and SAFELIST are deployed from the owner's `mywallet` keystore (`node deploy.mjs --network=studio-dev --keystore=mywallet`, password read from the environment, never stored). The Safelist curator is whoever deploys it. Seeds are sent from the local test accounts; the register has no privileged caller, so who sends them does not matter.
+The first instances were deployed from the local test key in `test/.accounts.json`. The hardened instances were also deployed from that local test key, by the owner's choice. `deploy.mjs` still supports `--keystore=<name>` (password read from the environment, never stored). The Safelist curator is whoever deploys it. Seeds are sent from the local test accounts; the register has no privileged caller, so who sends them does not matter.
 
 ## D10. Token metadata comes from the chain (eth_call), not an explorer
 

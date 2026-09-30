@@ -41,10 +41,10 @@ Status legend: [ ] todo · [~] in progress · [x] done · [!] blocked (reason in
 - [x] H4 no leader text stored; history keeps hashes only
 - [x] H5 no payable (test)
 - [x] H6 Safelist.prune
-- [ ] H7 MODEL seeds twice on DEMO (seed script ready; runs after the keystore redeploy)
-- [ ] H8 verify_source.mjs against HEAD for all three (after the keystore redeploy)
+- [x] H7 MODEL seeds twice on DEMO (M1-M3, both runs agree; M3 differs from my expectation, documented)
+- [x] H8 verify_source.mjs: all three byte-identical to ab17aa7
 - [x] H9 README "What the model never decides"
 - [x] coverage gate (docs/COVERAGE.md), refuse uncovered pairs; rules 4/5 need an official entry; tests
 - [x] list size 667,466 bytes; truncated/unparsable/short list = evidence failure; tests
 - [x] smoke deploy of the hardened source on studio-dev (scratch instance)
-- [ ] user runs keystore deploy; reseed; verify; ADDRESSES.md, README, SEEDS.md; push
+- [x] redeploy from the local test key (keystore skipped by instruction); reseed; verify; ADDRESSES.md, README, SEEDS.md; push

@@ -1,0 +1,1968 @@
+{
+  "contracts": {
+    "CANONICAL": "0xA46276c6F0C151D1DB645239bd0190325d0C3177",
+    "DEMO": "0xeE89132Cc5FB910d40481BE8CD01ac04aA7299fc",
+    "SAFELIST": "0xFF66Ca6d86be7Aa9e1848ba932e2BaA492BCA49b"
+  },
+  "commit": "ab17aa74dbca43b4c0e259cf70f3b747bf5b0364",
+  "steps": {
+    "D1": {
+      "id": "D1",
+      "instance": "DEMO",
+      "contract": "0xeE89132Cc5FB910d40481BE8CD01ac04aA7299fc",
+      "signer": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+      "method": "flag",
+      "args": [
+        "base",
+        "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+        "usd-coin"
+      ],
+      "expected": "PENDING",
+      "note": "the Ethereum USDC address on Base: no contract there (eth_getCode is empty), so the evidence fails",
+      "tx": "0xebb058f154e00910413ab765360503c0ba58a7038d028b2d07399d3a7b2a2df7",
+      "status": "ACCEPTED",
+      "reverted": false,
+      "revert_reason": "",
+      "returned": 1,
+      "seconds": 18,
+      "at": "2026-09-30T07:28:59.145Z",
+      "case_id": 1,
+      "actual": "PENDING",
+      "case": {
+        "basis": "",
+        "case_id": 1,
+        "chain": "base",
+        "coin": "usd-coin",
+        "created_at": 1790753325,
+        "deadline": 1790753625,
+        "decimals": "",
+        "facts": {},
+        "flagged_by": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+        "history": [],
+        "list_entry": null,
+        "meaning": "flagged; evidence not yet agreed",
+        "name": "",
+        "official_addresses": [],
+        "official_list_entry": null,
+        "rechecks": 0,
+        "root_case_id": 0,
+        "ruled_at": 0,
+        "state": "PENDING",
+        "symbol": "",
+        "token": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+        "token_type": ""
+      },
+      "done": true,
+      "match": true
+    },
+    "D2": {
+      "id": "D2",
+      "instance": "DEMO",
+      "contract": "0xeE89132Cc5FB910d40481BE8CD01ac04aA7299fc",
+      "signer": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+      "method": "rule",
+      "args": [
+        1
+      ],
+      "expected": "PENDING",
+      "note": "anyone retries before the 5-minute deadline; still no contract",
+      "tx": "0xe9c639b67dc020e4fd061d0425c8ba6393a4252cfa9faba52c5e1705a724f0ac",
+      "status": "ACCEPTED",
+      "reverted": false,
+      "revert_reason": "",
+      "returned": "PENDING",
+      "seconds": 12,
+      "at": "2026-09-30T07:29:12.224Z",
+      "actual": "PENDING",
+      "done": true,
+      "match": true
+    },
+    "D3": {
+      "id": "D3",
+      "instance": "DEMO",
+      "contract": "0xeE89132Cc5FB910d40481BE8CD01ac04aA7299fc",
+      "signer": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+      "method": "flag",
+      "args": [
+        "arbitrum",
+        "0x8Fd886c4021ed69a968f6966F818e476868B00eD",
+        "usd-coin"
+      ],
+      "expected": "IMPERSONATOR/EXACT_COPY",
+      "note": "exact copy, to be rechecked",
+      "tx": "0x67af44613650713346ac2da9d72c184d5c3b9bf9d504926d038b04c8421981b4",
+      "status": "ACCEPTED",
+      "reverted": false,
+      "revert_reason": "",
+      "returned": 2,
+      "seconds": 12,
+      "at": "2026-09-30T07:29:26.192Z",
+      "case_id": 2,
+      "actual": "IMPERSONATOR/EXACT_COPY",
+      "case": {
+        "basis": "EXACT_COPY",
+        "case_id": 2,
+        "chain": "arbitrum",
+        "coin": "usd-coin",
+        "created_at": 1790753357,
+        "deadline": 1790753657,
+        "decimals": "6",
+        "facts": {
+          "disclosure": [],
+          "disguised": false,
+          "folded_name": "USDC",
+          "folded_symbol": "USDC",
+          "name_len": 4,
+          "official_on_chain": true,
+          "skeleton_name": "USDC",
+          "skeleton_symbol": "USDC",
+          "symbol_len": 4,
+          "unknown_chars": false
+        },
+        "flagged_by": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+        "history": [
+          {
+            "at": 1790753357,
+            "basis": "EXACT_COPY",
+            "decimals": "6",
+            "evidence_sha256": "7155a55ce84fac6dca2f886d946e017f398a575f29cde02dfce04d930cac2ecf",
+            "label": "IMPERSONATOR",
+            "name_sha256": "8591ee9090c0c02ca1f103cb637131d8f358870aba145245ff083e138fdd705b",
+            "symbol_sha256": "8591ee9090c0c02ca1f103cb637131d8f358870aba145245ff083e138fdd705b"
+          }
+        ],
+        "list_entry": null,
+        "meaning": "presents itself as the coin without being on the coin's official list",
+        "name": "USDC",
+        "official_addresses": [
+          "0xaf88d065e77c8cc2239327c5edb3a432268e5831"
+        ],
+        "official_list_entry": null,
+        "rechecks": 0,
+        "root_case_id": 0,
+        "ruled_at": 1790753357,
+        "state": "IMPERSONATOR",
+        "symbol": "USDC",
+        "token": "0x8fd886c4021ed69a968f6966f818e476868b00ed",
+        "token_type": "ERC-20"
+      },
+      "done": true,
+      "match": true
+    },
+    "D4": {
+      "id": "D4",
+      "instance": "DEMO",
+      "contract": "0xeE89132Cc5FB910d40481BE8CD01ac04aA7299fc",
+      "signer": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+      "method": "recheck",
+      "args": [
+        2
+      ],
+      "expected": "refused: recheck cooldown has not passed",
+      "note": "recheck right away",
+      "tx": "0xfb998cda5d3f864b59a6fb6d8e01aad6dd08e562cc5cb83f433b034135765627",
+      "status": "ACCEPTED",
+      "reverted": true,
+      "revert_reason": "recheck cooldown has not passed",
+      "returned": null,
+      "seconds": 11,
+      "at": "2026-09-30T07:29:39.301Z",
+      "actual": "refused: recheck cooldown has not passed",
+      "done": true,
+      "match": true
+    },
+    "M1": {
+      "id": "M1",
+      "instance": "DEMO",
+      "contract": "0xeE89132Cc5FB910d40481BE8CD01ac04aA7299fc",
+      "signer": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+      "method": "flag",
+      "args": [
+        "arbitrum",
+        "0xEB466342C4d449BC9f53A865D5Cb90586f405215",
+        "usd-coin"
+      ],
+      "expected": "VARIANT/MODEL",
+      "note": "'Axelar Wrapped USDC' / 'axlUSDC': model run 1",
+      "tx": "0x78dbf67739d3dc67ad14ab441480830e6b798bbf7142042c0608e9fe5601f3e9",
+      "status": "ACCEPTED",
+      "reverted": false,
+      "revert_reason": "",
+      "returned": 3,
+      "seconds": 24,
+      "at": "2026-09-30T07:30:02.897Z",
+      "case_id": 3,
+      "actual": "VARIANT/MODEL",
+      "case": {
+        "basis": "MODEL",
+        "case_id": 3,
+        "chain": "arbitrum",
+        "coin": "usd-coin",
+        "created_at": 1790753387,
+        "deadline": 1790753687,
+        "decimals": "6",
+        "facts": {
+          "disclosure": [
+            "AXELAR"
+          ],
+          "disguised": false,
+          "folded_name": "AXELARWRAPPEDUSDC",
+          "folded_symbol": "AXLUSDC",
+          "name_len": 19,
+          "official_on_chain": true,
+          "skeleton_name": "AXELARWRAPPEDUSDC",
+          "skeleton_symbol": "AXLUSDC",
+          "symbol_len": 7,
+          "unknown_chars": false
+        },
+        "flagged_by": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+        "history": [
+          {
+            "at": 1790753387,
+            "basis": "MODEL",
+            "decimals": "6",
+            "evidence_sha256": "771000408085c8e5ce41d3d885e6d9de76a471a7224c2d7ea2998d0e1851c50f",
+            "label": "VARIANT",
+            "name_sha256": "37cdd7c4ca930b12f890cedf062b042da46e3b94c863797c70f5ef93d3056b24",
+            "symbol_sha256": "19368eb07fe5148559d021bb2425e768f62f0b504580fa8efe0d47daf14da1af"
+          }
+        ],
+        "list_entry": null,
+        "meaning": "openly labelled bridged or wrapped version of the coin, not on the official list",
+        "name": "Axelar Wrapped USDC",
+        "official_addresses": [
+          "0xaf88d065e77c8cc2239327c5edb3a432268e5831"
+        ],
+        "official_list_entry": null,
+        "rechecks": 0,
+        "root_case_id": 0,
+        "ruled_at": 1790753387,
+        "state": "VARIANT",
+        "symbol": "axlUSDC",
+        "token": "0xeb466342c4d449bc9f53a865d5cb90586f405215",
+        "token_type": "ERC-20"
+      },
+      "done": true,
+      "match": true
+    },
+    "M2": {
+      "id": "M2",
+      "instance": "DEMO",
+      "contract": "0xeE89132Cc5FB910d40481BE8CD01ac04aA7299fc",
+      "signer": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+      "method": "flag",
+      "args": [
+        "ethereum",
+        "0xBc65ad17c5C0a2A4D159fa5a503f4992c7B545FE",
+        "usd-coin"
+      ],
+      "expected": "UNRELATED/MODEL",
+      "note": "'Spark USDC Vault' / 'sUSDC': model run 1",
+      "tx": "0x99ce236f027e3aaef7ad5a5f2c180f2389a2154060934c806d12e68466436454",
+      "status": "ACCEPTED",
+      "reverted": false,
+      "revert_reason": "",
+      "returned": 4,
+      "seconds": 26,
+      "at": "2026-09-30T07:30:35.158Z",
+      "case_id": 4,
+      "actual": "UNRELATED/MODEL",
+      "case": {
+        "basis": "MODEL",
+        "case_id": 4,
+        "chain": "ethereum",
+        "coin": "usd-coin",
+        "created_at": 1790753415,
+        "deadline": 1790753715,
+        "decimals": "18",
+        "facts": {
+          "disclosure": [],
+          "disguised": false,
+          "folded_name": "SPARKUSDCVAULT",
+          "folded_symbol": "SUSDC",
+          "name_len": 16,
+          "official_on_chain": true,
+          "skeleton_name": "SPARKUSDCVAULT",
+          "skeleton_symbol": "SUSDC",
+          "symbol_len": 5,
+          "unknown_chars": false
+        },
+        "flagged_by": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+        "history": [
+          {
+            "at": 1790753415,
+            "basis": "MODEL",
+            "decimals": "18",
+            "evidence_sha256": "11827b2b281974f09bc39103a66291809a273cb8198a76ca378b48d0b244dc8d",
+            "label": "UNRELATED",
+            "name_sha256": "88aceb85214ca967bee9dfc4ee213aea896d348264a472b448c4e0d2e0df0c86",
+            "symbol_sha256": "2d91e1f166f4540e816b83ba7cc2df08b4d5ce17d329e97cd31614d1bc0f8892"
+          }
+        ],
+        "list_entry": null,
+        "meaning": "does not present itself as the coin",
+        "name": "Spark USDC Vault",
+        "official_addresses": [
+          "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+        ],
+        "official_list_entry": null,
+        "rechecks": 0,
+        "root_case_id": 0,
+        "ruled_at": 1790753415,
+        "state": "UNRELATED",
+        "symbol": "sUSDC",
+        "token": "0xbc65ad17c5c0a2a4d159fa5a503f4992c7b545fe",
+        "token_type": "ERC-20"
+      },
+      "done": true,
+      "match": true
+    },
+    "M3": {
+      "id": "M3",
+      "instance": "DEMO",
+      "contract": "0xeE89132Cc5FB910d40481BE8CD01ac04aA7299fc",
+      "signer": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+      "method": "flag",
+      "args": [
+        "arbitrum",
+        "0xE3F520d5C6f5421eE02160242f7a9e025d829E3e",
+        "usd-coin"
+      ],
+      "expected": "IMPERSONATOR/MODEL",
+      "note": "real fake: 'Bridged USDC' / 'USDC.e' padded with invisible characters: model run 1",
+      "tx": "0xcdb9ed9e32b734ba2956c373a177df006ecbaf39604c6234df2e2d318f314df9",
+      "status": "ACCEPTED",
+      "reverted": false,
+      "revert_reason": "",
+      "returned": 5,
+      "seconds": 26,
+      "at": "2026-09-30T07:31:03.082Z",
+      "case_id": 5,
+      "actual": "VARIANT/MODEL",
+      "case": {
+        "basis": "MODEL",
+        "case_id": 5,
+        "chain": "arbitrum",
+        "coin": "usd-coin",
+        "created_at": 1790753444,
+        "deadline": 1790753744,
+        "decimals": "6",
+        "facts": {
+          "disclosure": [
+            ".E",
+            "BRIDGED"
+          ],
+          "disguised": true,
+          "folded_name": "BRIDGEDUSDC",
+          "folded_symbol": "USDCE",
+          "name_len": 20,
+          "official_on_chain": true,
+          "skeleton_name": "BRIDGEDUSDC",
+          "skeleton_symbol": "USDCE",
+          "symbol_len": 11,
+          "unknown_chars": false
+        },
+        "flagged_by": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+        "history": [
+          {
+            "at": 1790753444,
+            "basis": "MODEL",
+            "decimals": "6",
+            "evidence_sha256": "595b95b3960be8c7b52095959487a5941106fe5f73a076c7c75195dfd3d73722",
+            "label": "VARIANT",
+            "name_sha256": "23a98c3bed66f1a0706515722e50b2b1b9fabd316a394d101a16dd035b5898ab",
+            "symbol_sha256": "7ab89ec373cf2125901477e6758e7acd98c3158dc43a738987fba1fdac6a26bf"
+          }
+        ],
+        "list_entry": null,
+        "meaning": "openly labelled bridged or wrapped version of the coin, not on the official list",
+        "name": "Br‌id⁫g⁤e⁪d U⁢S​D⁢C⁠",
+        "official_addresses": [
+          "0xaf88d065e77c8cc2239327c5edb3a432268e5831"
+        ],
+        "official_list_entry": null,
+        "rechecks": 0,
+        "root_case_id": 0,
+        "ruled_at": 1790753444,
+        "state": "VARIANT",
+        "symbol": "U‌S​DC⁢.e﻿﻿",
+        "token": "0xe3f520d5c6f5421ee02160242f7a9e025d829e3e",
+        "token_type": "ERC-20"
+      },
+      "done": true,
+      "match": false,
+      "why": "The model ruled this real fake ('Bridged USDC' / 'USDC.e' padded with invisible characters) VARIANT, and ruled it VARIANT again on recheck (M3r). Validators agreed each time. Its symbol skeleton is USDCE, not USDC, so rule 4 does not apply; the name openly says 'Bridged', which fits the VARIANT definition. IMPERSONATOR was my expectation. Hidden characters inside a disclosed bridge name are left to the model (README, known limits)."
+    },
+    "C1": {
+      "id": "C1",
+      "instance": "CANONICAL",
+      "contract": "0xA46276c6F0C151D1DB645239bd0190325d0C3177",
+      "signer": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+      "method": "flag",
+      "args": [
+        "arbitrum",
+        "0xEbb993F7C5477016A0a025A790Dd079dfe3Eca9D",
+        "usd-coin"
+      ],
+      "expected": "IMPERSONATOR/HOMOGLYPH",
+      "note": "on chain: 'USD Coin' / 'USDC' with Cyrillic ES and o plus invisible U+206B, U+FEFF, U+200B",
+      "tx": "0xbd4379c13082d2016696da772e63daa05ab42b1d9b3467a4a3f3a326f4c14cc6",
+      "status": "ACCEPTED",
+      "reverted": false,
+      "revert_reason": "",
+      "returned": 1,
+      "seconds": 11,
+      "at": "2026-09-30T07:31:15.785Z",
+      "case_id": 1,
+      "actual": "IMPERSONATOR/HOMOGLYPH",
+      "case": {
+        "basis": "HOMOGLYPH",
+        "case_id": 1,
+        "chain": "arbitrum",
+        "coin": "usd-coin",
+        "created_at": 1790753468,
+        "deadline": 1790775068,
+        "decimals": "6",
+        "facts": {
+          "disclosure": [],
+          "disguised": true,
+          "folded_name": "USDCOIN",
+          "folded_symbol": "USDC",
+          "name_len": 18,
+          "official_on_chain": true,
+          "skeleton_name": "USDCOIN",
+          "skeleton_symbol": "USDC",
+          "symbol_len": 10,
+          "unknown_chars": true
+        },
+        "flagged_by": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+        "history": [
+          {
+            "at": 1790753468,
+            "basis": "HOMOGLYPH",
+            "decimals": "6",
+            "evidence_sha256": "7aa321090cec3a6808958cc14ee59d9df738e666b884814e569c4512ec18404b",
+            "label": "IMPERSONATOR",
+            "name_sha256": "7e09f7d545837904bf4fef103a855a087c0c3ca818c4e25c57f678bb92ec7d9c",
+            "symbol_sha256": "bb247b4a5cd93feb95abcf353a900b58283d47c2758f4ad50b7aefc627c36655"
+          }
+        ],
+        "list_entry": null,
+        "meaning": "presents itself as the coin without being on the coin's official list",
+        "name": "⁫U⁫S﻿D​ ⁯С‍о‌i‎n⁭⁯",
+        "official_addresses": [
+          "0xaf88d065e77c8cc2239327c5edb3a432268e5831"
+        ],
+        "official_list_entry": null,
+        "rechecks": 0,
+        "root_case_id": 0,
+        "ruled_at": 1790753468,
+        "state": "IMPERSONATOR",
+        "symbol": "﻿U⁫S⁫D⁫С⁭⁫",
+        "token": "0xebb993f7c5477016a0a025a790dd079dfe3eca9d",
+        "token_type": "ERC-20"
+      },
+      "done": true,
+      "match": true
+    },
+    "C2": {
+      "id": "C2",
+      "instance": "CANONICAL",
+      "contract": "0xA46276c6F0C151D1DB645239bd0190325d0C3177",
+      "signer": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+      "method": "flag",
+      "args": [
+        "arbitrum",
+        "0xdaECe7e93993394063a01BB39145A7d71d4df8f1",
+        "usd-coin"
+      ],
+      "expected": "IMPERSONATOR/HOMOGLYPH",
+      "note": "'U+FEFF SD Coin' / 'U+FEFF SDC': byte-order mark inside",
+      "tx": "0xfb0e08c901d898f54a73dbf82d7226e7b599865b427d20530062f64353a40a34",
+      "status": "ACCEPTED",
+      "reverted": false,
+      "revert_reason": "",
+      "returned": 2,
+      "seconds": 11,
+      "at": "2026-09-30T07:31:28.853Z",
+      "case_id": 2,
+      "actual": "IMPERSONATOR/HOMOGLYPH",
+      "case": {
+        "basis": "HOMOGLYPH",
+        "case_id": 2,
+        "chain": "arbitrum",
+        "coin": "usd-coin",
+        "created_at": 1790753481,
+        "deadline": 1790775081,
+        "decimals": "6",
+        "facts": {
+          "disclosure": [],
+          "disguised": true,
+          "folded_name": "USDCOIN",
+          "folded_symbol": "USDC",
+          "name_len": 9,
+          "official_on_chain": true,
+          "skeleton_name": "USDCOIN",
+          "skeleton_symbol": "USDC",
+          "symbol_len": 5,
+          "unknown_chars": false
+        },
+        "flagged_by": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+        "history": [
+          {
+            "at": 1790753481,
+            "basis": "HOMOGLYPH",
+            "decimals": "6",
+            "evidence_sha256": "6fd0ee3a4d043472e7343f063078b6653e099ef86f2e8cfaaab0c8840eeb664f",
+            "label": "IMPERSONATOR",
+            "name_sha256": "95f12b9e046969da4474043dbb8b508b0eeca7aa7176f7da865158457fa1cd28",
+            "symbol_sha256": "640673053bcb98007af2b27eaed5d30391f19a5951997fa23ff668f8c3910999"
+          }
+        ],
+        "list_entry": null,
+        "meaning": "presents itself as the coin without being on the coin's official list",
+        "name": "U﻿SD Coin",
+        "official_addresses": [
+          "0xaf88d065e77c8cc2239327c5edb3a432268e5831"
+        ],
+        "official_list_entry": null,
+        "rechecks": 0,
+        "root_case_id": 0,
+        "ruled_at": 1790753481,
+        "state": "IMPERSONATOR",
+        "symbol": "U﻿SDC",
+        "token": "0xdaece7e93993394063a01bb39145a7d71d4df8f1",
+        "token_type": "ERC-20"
+      },
+      "done": true,
+      "match": true
+    },
+    "C3": {
+      "id": "C3",
+      "instance": "CANONICAL",
+      "contract": "0xA46276c6F0C151D1DB645239bd0190325d0C3177",
+      "signer": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+      "method": "flag",
+      "args": [
+        "arbitrum",
+        "0x72224ea851b18d56065E7ebe355a246A66F5ce2E",
+        "usd-coin"
+      ],
+      "expected": "IMPERSONATOR/HOMOGLYPH",
+      "note": "'USD Coin' / 'U U+206F SD U+200D C'",
+      "tx": "0x714a7792df3f5115f7bfb6c8088cad387fb59149ea4b588db941fdaa9326f006",
+      "status": "ACCEPTED",
+      "reverted": false,
+      "revert_reason": "",
+      "returned": 3,
+      "seconds": 11,
+      "at": "2026-09-30T07:31:41.652Z",
+      "case_id": 3,
+      "actual": "IMPERSONATOR/HOMOGLYPH",
+      "case": {
+        "basis": "HOMOGLYPH",
+        "case_id": 3,
+        "chain": "arbitrum",
+        "coin": "usd-coin",
+        "created_at": 1790753495,
+        "deadline": 1790775095,
+        "decimals": "6",
+        "facts": {
+          "disclosure": [],
+          "disguised": true,
+          "folded_name": "USDCOIN",
+          "folded_symbol": "USDC",
+          "name_len": 8,
+          "official_on_chain": true,
+          "skeleton_name": "USDCOIN",
+          "skeleton_symbol": "USDC",
+          "symbol_len": 6,
+          "unknown_chars": false
+        },
+        "flagged_by": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+        "history": [
+          {
+            "at": 1790753495,
+            "basis": "HOMOGLYPH",
+            "decimals": "6",
+            "evidence_sha256": "f277950ba162b3c151c23ded7b5c6f63a0a76c2a0bef5cb47328382d6d6893d0",
+            "label": "IMPERSONATOR",
+            "name_sha256": "4551f5a5957e4cb87d60aa260b61c8ed5256649a489ced68fe078c16d6558b8b",
+            "symbol_sha256": "678aa927c1caff5f58e0ebf8e13bc25e641524a4a52eab22a26e019cb0c326db"
+          }
+        ],
+        "list_entry": null,
+        "meaning": "presents itself as the coin without being on the coin's official list",
+        "name": "USD Coin",
+        "official_addresses": [
+          "0xaf88d065e77c8cc2239327c5edb3a432268e5831"
+        ],
+        "official_list_entry": null,
+        "rechecks": 0,
+        "root_case_id": 0,
+        "ruled_at": 1790753495,
+        "state": "IMPERSONATOR",
+        "symbol": "U⁯SD‍C",
+        "token": "0x72224ea851b18d56065e7ebe355a246a66f5ce2e",
+        "token_type": "ERC-20"
+      },
+      "done": true,
+      "match": true
+    },
+    "C4": {
+      "id": "C4",
+      "instance": "CANONICAL",
+      "contract": "0xA46276c6F0C151D1DB645239bd0190325d0C3177",
+      "signer": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+      "method": "flag",
+      "args": [
+        "arbitrum",
+        "0x2790AfA96A254142a13C24A7BE2C35afC784b82a",
+        "tether"
+      ],
+      "expected": "IMPERSONATOR/HOMOGLYPH",
+      "note": "'Tet U+FEFF her USD' / 'U U+200C SDT'",
+      "tx": "0xd90d123dea35182cfd869b7a10911035891859ecfcbfac41285219d6942030bc",
+      "status": "ACCEPTED",
+      "reverted": false,
+      "revert_reason": "",
+      "returned": 4,
+      "seconds": 11,
+      "at": "2026-09-30T07:31:54.512Z",
+      "case_id": 4,
+      "actual": "IMPERSONATOR/HOMOGLYPH",
+      "case": {
+        "basis": "HOMOGLYPH",
+        "case_id": 4,
+        "chain": "arbitrum",
+        "coin": "tether",
+        "created_at": 1790753507,
+        "deadline": 1790775107,
+        "decimals": "6",
+        "facts": {
+          "disclosure": [],
+          "disguised": true,
+          "folded_name": "TETHERUSD",
+          "folded_symbol": "USDT",
+          "name_len": 11,
+          "official_on_chain": true,
+          "skeleton_name": "TETHERUSD",
+          "skeleton_symbol": "USDT",
+          "symbol_len": 5,
+          "unknown_chars": false
+        },
+        "flagged_by": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+        "history": [
+          {
+            "at": 1790753507,
+            "basis": "HOMOGLYPH",
+            "decimals": "6",
+            "evidence_sha256": "e1ccbaec58176ccf7dd3c6b5354afb2a1caa3f0dba8458530cfe0a13c7c12cc5",
+            "label": "IMPERSONATOR",
+            "name_sha256": "c177e24467d2a38bcaab7ddd983e4fdc9ac444292e32206f652ed53feee65020",
+            "symbol_sha256": "c8cc62670965d0c41e2a08f49deb47601b1d6cf3aaca3092030cc0012f5d0c87"
+          }
+        ],
+        "list_entry": null,
+        "meaning": "presents itself as the coin without being on the coin's official list",
+        "name": "Tet﻿her USD",
+        "official_addresses": [
+          "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9"
+        ],
+        "official_list_entry": null,
+        "rechecks": 0,
+        "root_case_id": 0,
+        "ruled_at": 1790753507,
+        "state": "IMPERSONATOR",
+        "symbol": "U‌SDT",
+        "token": "0x2790afa96a254142a13c24a7be2c35afc784b82a",
+        "token_type": "ERC-20"
+      },
+      "done": true,
+      "match": true
+    },
+    "C5": {
+      "id": "C5",
+      "instance": "CANONICAL",
+      "contract": "0xA46276c6F0C151D1DB645239bd0190325d0C3177",
+      "signer": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+      "method": "flag",
+      "args": [
+        "arbitrum",
+        "0x8Fd886c4021ed69a968f6966F818e476868B00eD",
+        "usd-coin"
+      ],
+      "expected": "IMPERSONATOR/EXACT_COPY",
+      "note": "'USDC' / 'USDC', 6 decimals, not the official Arbitrum USDC",
+      "tx": "0x90b05c2e984093e493d5c8d591f6926b9c01b13acaefcf54681204f7330703ce",
+      "status": "ACCEPTED",
+      "reverted": false,
+      "revert_reason": "",
+      "returned": 5,
+      "seconds": 11,
+      "at": "2026-09-30T07:32:07.270Z",
+      "case_id": 5,
+      "actual": "IMPERSONATOR/EXACT_COPY",
+      "case": {
+        "basis": "EXACT_COPY",
+        "case_id": 5,
+        "chain": "arbitrum",
+        "coin": "usd-coin",
+        "created_at": 1790753520,
+        "deadline": 1790775120,
+        "decimals": "6",
+        "facts": {
+          "disclosure": [],
+          "disguised": false,
+          "folded_name": "USDC",
+          "folded_symbol": "USDC",
+          "name_len": 4,
+          "official_on_chain": true,
+          "skeleton_name": "USDC",
+          "skeleton_symbol": "USDC",
+          "symbol_len": 4,
+          "unknown_chars": false
+        },
+        "flagged_by": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+        "history": [
+          {
+            "at": 1790753520,
+            "basis": "EXACT_COPY",
+            "decimals": "6",
+            "evidence_sha256": "7155a55ce84fac6dca2f886d946e017f398a575f29cde02dfce04d930cac2ecf",
+            "label": "IMPERSONATOR",
+            "name_sha256": "8591ee9090c0c02ca1f103cb637131d8f358870aba145245ff083e138fdd705b",
+            "symbol_sha256": "8591ee9090c0c02ca1f103cb637131d8f358870aba145245ff083e138fdd705b"
+          }
+        ],
+        "list_entry": null,
+        "meaning": "presents itself as the coin without being on the coin's official list",
+        "name": "USDC",
+        "official_addresses": [
+          "0xaf88d065e77c8cc2239327c5edb3a432268e5831"
+        ],
+        "official_list_entry": null,
+        "rechecks": 0,
+        "root_case_id": 0,
+        "ruled_at": 1790753520,
+        "state": "IMPERSONATOR",
+        "symbol": "USDC",
+        "token": "0x8fd886c4021ed69a968f6966f818e476868b00ed",
+        "token_type": "ERC-20"
+      },
+      "done": true,
+      "match": true
+    },
+    "C6": {
+      "id": "C6",
+      "instance": "CANONICAL",
+      "contract": "0xA46276c6F0C151D1DB645239bd0190325d0C3177",
+      "signer": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+      "method": "flag",
+      "args": [
+        "arbitrum",
+        "0x413f1661a78A9675C95E33D63b0c90DBD747c43B",
+        "tether"
+      ],
+      "expected": "IMPERSONATOR/EXACT_COPY",
+      "note": "'USDT' / 'USDT' on Arbitrum (the official Tether there is USDT0)",
+      "tx": "0xf62f7ad9e6594ba4c8bd314b04e9882ce2fb7c12cfeb1074af84022796d36f14",
+      "status": "ACCEPTED",
+      "reverted": false,
+      "revert_reason": "",
+      "returned": 6,
+      "seconds": 12,
+      "at": "2026-09-30T07:32:21.269Z",
+      "case_id": 6,
+      "actual": "IMPERSONATOR/EXACT_COPY",
+      "case": {
+        "basis": "EXACT_COPY",
+        "case_id": 6,
+        "chain": "arbitrum",
+        "coin": "tether",
+        "created_at": 1790753534,
+        "deadline": 1790775134,
+        "decimals": "6",
+        "facts": {
+          "disclosure": [],
+          "disguised": false,
+          "folded_name": "USDT",
+          "folded_symbol": "USDT",
+          "name_len": 4,
+          "official_on_chain": true,
+          "skeleton_name": "USDT",
+          "skeleton_symbol": "USDT",
+          "symbol_len": 4,
+          "unknown_chars": false
+        },
+        "flagged_by": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+        "history": [
+          {
+            "at": 1790753534,
+            "basis": "EXACT_COPY",
+            "decimals": "6",
+            "evidence_sha256": "512bb2ff3e86941a373c52a737b5d09bcb2d6710423e0aaa1f38828a3c9d1d63",
+            "label": "IMPERSONATOR",
+            "name_sha256": "ca9006bd3fb03d355daeeff93b24be90afaa6e3ca0073ff5720f8a852c933278",
+            "symbol_sha256": "ca9006bd3fb03d355daeeff93b24be90afaa6e3ca0073ff5720f8a852c933278"
+          }
+        ],
+        "list_entry": null,
+        "meaning": "presents itself as the coin without being on the coin's official list",
+        "name": "USDT",
+        "official_addresses": [
+          "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9"
+        ],
+        "official_list_entry": null,
+        "rechecks": 0,
+        "root_case_id": 0,
+        "ruled_at": 1790753534,
+        "state": "IMPERSONATOR",
+        "symbol": "USDT",
+        "token": "0x413f1661a78a9675c95e33d63b0c90dbd747c43b",
+        "token_type": "ERC-20"
+      },
+      "done": true,
+      "match": true
+    },
+    "C7": {
+      "id": "C7",
+      "instance": "CANONICAL",
+      "contract": "0xA46276c6F0C151D1DB645239bd0190325d0C3177",
+      "signer": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+      "method": "flag",
+      "args": [
+        "ethereum",
+        "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+        "usd-coin"
+      ],
+      "expected": "OFFICIAL/OFFICIAL_LIST",
+      "note": "real USDC on Ethereum",
+      "tx": "0x338d3e5ef7be408cded3f883ffe0456344a6b372de08cd435cf8fe4bc69ebceb",
+      "status": "ACCEPTED",
+      "reverted": false,
+      "revert_reason": "",
+      "returned": 7,
+      "seconds": 11,
+      "at": "2026-09-30T07:32:33.970Z",
+      "case_id": 7,
+      "actual": "OFFICIAL/OFFICIAL_LIST",
+      "case": {
+        "basis": "OFFICIAL_LIST",
+        "case_id": 7,
+        "chain": "ethereum",
+        "coin": "usd-coin",
+        "created_at": 1790753546,
+        "deadline": 1790775146,
+        "decimals": "6",
+        "facts": {
+          "disclosure": [],
+          "disguised": false,
+          "folded_name": "USDCOIN",
+          "folded_symbol": "USDC",
+          "name_len": 8,
+          "official_on_chain": true,
+          "skeleton_name": "USDCOIN",
+          "skeleton_symbol": "USDC",
+          "symbol_len": 4,
+          "unknown_chars": false
+        },
+        "flagged_by": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+        "history": [
+          {
+            "at": 1790753546,
+            "basis": "OFFICIAL_LIST",
+            "decimals": "6",
+            "evidence_sha256": "37e6cb9534625426fa372d3ff1d84c9ada33879c7b0f7be68529224d81b639f6",
+            "label": "OFFICIAL",
+            "name_sha256": "4551f5a5957e4cb87d60aa260b61c8ed5256649a489ced68fe078c16d6558b8b",
+            "symbol_sha256": "8591ee9090c0c02ca1f103cb637131d8f358870aba145245ff083e138fdd705b"
+          }
+        ],
+        "list_entry": {
+          "address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+          "chainId": 1,
+          "name": "USDCoin",
+          "symbol": "USDC"
+        },
+        "meaning": "on the Uniswap default token list for this chain under the coin's symbol at ruled_at",
+        "name": "USD Coin",
+        "official_addresses": [
+          "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+        ],
+        "official_list_entry": {
+          "address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+          "chainId": 1,
+          "symbol": "USDC"
+        },
+        "rechecks": 0,
+        "root_case_id": 0,
+        "ruled_at": 1790753546,
+        "state": "OFFICIAL",
+        "symbol": "USDC",
+        "token": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+        "token_type": "ERC-20"
+      },
+      "done": true,
+      "match": true
+    },
+    "C8": {
+      "id": "C8",
+      "instance": "CANONICAL",
+      "contract": "0xA46276c6F0C151D1DB645239bd0190325d0C3177",
+      "signer": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+      "method": "flag",
+      "args": [
+        "arbitrum",
+        "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8",
+        "usd-coin"
+      ],
+      "expected": "VARIANT/LISTED_VARIANT",
+      "note": "real bridged USDC.e: on chain it says 'USD Coin (Arb1)' / 'USDC'; the list carries this address as USDC.e 'Bridged USDC'",
+      "tx": "0xdcec5d681d83e93ccaca787e67c24846769f2b34c8a1606b1ce03d760246c211",
+      "status": "ACCEPTED",
+      "reverted": false,
+      "revert_reason": "",
+      "returned": 8,
+      "seconds": 11,
+      "at": "2026-09-30T07:32:46.369Z",
+      "case_id": 8,
+      "actual": "VARIANT/LISTED_VARIANT",
+      "case": {
+        "basis": "LISTED_VARIANT",
+        "case_id": 8,
+        "chain": "arbitrum",
+        "coin": "usd-coin",
+        "created_at": 1790753559,
+        "deadline": 1790775159,
+        "decimals": "6",
+        "facts": {
+          "disclosure": [],
+          "disguised": false,
+          "folded_name": "USDCOINARBI",
+          "folded_symbol": "USDC",
+          "name_len": 15,
+          "official_on_chain": true,
+          "skeleton_name": "USDCOINARB1",
+          "skeleton_symbol": "USDC",
+          "symbol_len": 4,
+          "unknown_chars": false
+        },
+        "flagged_by": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+        "history": [
+          {
+            "at": 1790753559,
+            "basis": "LISTED_VARIANT",
+            "decimals": "6",
+            "evidence_sha256": "9683fba7458f886564fa15d3fdfe6c1c6d6de81898902931b16b9112bb12d815",
+            "label": "VARIANT",
+            "name_sha256": "aa4fde740658b0485384d185b1061439df04b9e91e940dc2e4a40d9e07f2943f",
+            "symbol_sha256": "8591ee9090c0c02ca1f103cb637131d8f358870aba145245ff083e138fdd705b"
+          }
+        ],
+        "list_entry": {
+          "address": "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8",
+          "chainId": 42161,
+          "name": "Bridged USDC",
+          "symbol": "USDC.e"
+        },
+        "meaning": "openly labelled bridged or wrapped version of the coin, not on the official list",
+        "name": "USD Coin (Arb1)",
+        "official_addresses": [
+          "0xaf88d065e77c8cc2239327c5edb3a432268e5831"
+        ],
+        "official_list_entry": null,
+        "rechecks": 0,
+        "root_case_id": 0,
+        "ruled_at": 1790753559,
+        "state": "VARIANT",
+        "symbol": "USDC",
+        "token": "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8",
+        "token_type": "ERC-20"
+      },
+      "done": true,
+      "match": true
+    },
+    "C9": {
+      "id": "C9",
+      "instance": "CANONICAL",
+      "contract": "0xA46276c6F0C151D1DB645239bd0190325d0C3177",
+      "signer": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+      "method": "flag",
+      "args": [
+        "arbitrum",
+        "0xEB466342C4d449BC9f53A865D5Cb90586f405215",
+        "usd-coin"
+      ],
+      "expected": "VARIANT/MODEL",
+      "note": "'Axelar Wrapped USDC' / 'axlUSDC', not on the list",
+      "tx": "0xeb8d6f5cf3abcc3919cdd7852ed89024fd80f880d01be7ed6000a5552b0bbe58",
+      "status": "ACCEPTED",
+      "reverted": false,
+      "revert_reason": "",
+      "returned": 9,
+      "seconds": 21,
+      "at": "2026-09-30T07:33:08.953Z",
+      "case_id": 9,
+      "actual": "VARIANT/MODEL",
+      "case": {
+        "basis": "MODEL",
+        "case_id": 9,
+        "chain": "arbitrum",
+        "coin": "usd-coin",
+        "created_at": 1790753575,
+        "deadline": 1790775175,
+        "decimals": "6",
+        "facts": {
+          "disclosure": [
+            "AXELAR"
+          ],
+          "disguised": false,
+          "folded_name": "AXELARWRAPPEDUSDC",
+          "folded_symbol": "AXLUSDC",
+          "name_len": 19,
+          "official_on_chain": true,
+          "skeleton_name": "AXELARWRAPPEDUSDC",
+          "skeleton_symbol": "AXLUSDC",
+          "symbol_len": 7,
+          "unknown_chars": false
+        },
+        "flagged_by": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+        "history": [
+          {
+            "at": 1790753575,
+            "basis": "MODEL",
+            "decimals": "6",
+            "evidence_sha256": "771000408085c8e5ce41d3d885e6d9de76a471a7224c2d7ea2998d0e1851c50f",
+            "label": "VARIANT",
+            "name_sha256": "37cdd7c4ca930b12f890cedf062b042da46e3b94c863797c70f5ef93d3056b24",
+            "symbol_sha256": "19368eb07fe5148559d021bb2425e768f62f0b504580fa8efe0d47daf14da1af"
+          }
+        ],
+        "list_entry": null,
+        "meaning": "openly labelled bridged or wrapped version of the coin, not on the official list",
+        "name": "Axelar Wrapped USDC",
+        "official_addresses": [
+          "0xaf88d065e77c8cc2239327c5edb3a432268e5831"
+        ],
+        "official_list_entry": null,
+        "rechecks": 0,
+        "root_case_id": 0,
+        "ruled_at": 1790753575,
+        "state": "VARIANT",
+        "symbol": "axlUSDC",
+        "token": "0xeb466342c4d449bc9f53a865d5cb90586f405215",
+        "token_type": "ERC-20"
+      },
+      "done": true,
+      "match": true
+    },
+    "C10": {
+      "id": "C10",
+      "instance": "CANONICAL",
+      "contract": "0xA46276c6F0C151D1DB645239bd0190325d0C3177",
+      "signer": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+      "method": "flag",
+      "args": [
+        "ethereum",
+        "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+        "usd-coin"
+      ],
+      "expected": "UNRELATED/NO_BRAND_MATCH",
+      "note": "Sky 'USDS Stablecoin' / 'USDS': a different dollar token",
+      "tx": "0x46d2bfb5c3b4a7cf4dfea0985839a256f4bafede2323bba7e807954a437e15ff",
+      "status": "ACCEPTED",
+      "reverted": false,
+      "revert_reason": "",
+      "returned": 10,
+      "seconds": 12,
+      "at": "2026-09-30T07:33:22.474Z",
+      "case_id": 10,
+      "actual": "UNRELATED/LISTED_OTHER",
+      "case": {
+        "basis": "LISTED_OTHER",
+        "case_id": 10,
+        "chain": "ethereum",
+        "coin": "usd-coin",
+        "created_at": 1790753595,
+        "deadline": 1790775195,
+        "decimals": "18",
+        "facts": {
+          "disclosure": [],
+          "disguised": false,
+          "folded_name": "USDSSTABLECOIN",
+          "folded_symbol": "USDS",
+          "name_len": 15,
+          "official_on_chain": true,
+          "skeleton_name": "USDSSTABLECOIN",
+          "skeleton_symbol": "USDS",
+          "symbol_len": 4,
+          "unknown_chars": false
+        },
+        "flagged_by": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+        "history": [
+          {
+            "at": 1790753595,
+            "basis": "LISTED_OTHER",
+            "decimals": "18",
+            "evidence_sha256": "7c6a5d2070245761705f4ef1bac864fb27baef9a915dcd3c85af45292962bbdc",
+            "label": "UNRELATED",
+            "name_sha256": "f40802e2e825fc898684c3a550bdb505d77ed425ae0b2c2f0f1ac436d2b6477e",
+            "symbol_sha256": "930df05abaacf56cfb81cfce3a0f97ce352446a34c683266863838ee187bafce"
+          }
+        ],
+        "list_entry": {
+          "address": "0xdc035d45d973e3ec169d2276ddab16f1e407384f",
+          "chainId": 1,
+          "name": "USDS Stablecoin",
+          "symbol": "USDS"
+        },
+        "meaning": "does not present itself as the coin",
+        "name": "USDS Stablecoin",
+        "official_addresses": [
+          "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+        ],
+        "official_list_entry": null,
+        "rechecks": 0,
+        "root_case_id": 0,
+        "ruled_at": 1790753595,
+        "state": "UNRELATED",
+        "symbol": "USDS",
+        "token": "0xdc035d45d973e3ec169d2276ddab16f1e407384f",
+        "token_type": "ERC-20"
+      },
+      "done": true,
+      "match": false,
+      "why": "USDS is on the Uniswap default list on Ethereum (as USDS, 'USDS Stablecoin'), so rule 2b (LISTED_OTHER) decides it before rule 3 would. The outcome, UNRELATED, is as expected; the basis expectation was written before rule 2b existed. No contract change."
+    },
+    "C11": {
+      "id": "C11",
+      "instance": "CANONICAL",
+      "contract": "0xA46276c6F0C151D1DB645239bd0190325d0C3177",
+      "signer": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+      "method": "flag_by_precedent",
+      "args": [
+        "arbitrum",
+        [
+          "0x293971FC9f23AddadfB5bE29a4542C0E2BF67ba8",
+          "0x1C1dEB401E94f4826260Ca888E53180819449714",
+          "0x755A31d5dDbF5Cb69B15d50a01a0ea1ae15Ce474",
+          "0xCd5503c3718C2303Bf958538cF94FcB5606E4E01",
+          "0x0dFCCeB1147e0Ff11a442602a245E34D2FEBC977"
+        ],
+        5
+      ],
+      "expected": "5 x IMPERSONATOR/PRECEDENT",
+      "note": "five more 'USDC' / 'USDC' / 6-decimal copies, byte-identical to C5",
+      "tx": "0xae5d30a48f89e726db16e1b78525fd0151621853cb6e56cad78c542e20a22c8f",
+      "status": "ACCEPTED",
+      "reverted": false,
+      "revert_reason": "",
+      "returned": "{\"flagged\":[{\"case_id\":11,\"token\":\"0x293971fc9f23addadfb5be29a4542c0e2bf67ba8\"},{\"case_id\":12,\"token\":\"0x1c1deb401e94f4826260ca888e53180819449714\"},{\"case_id\":13,\"token\":\"0x755a31d5ddbf5cb69b15d50a01a0ea1ae15ce474\"},{\"case_id\":14,\"token\":\"0xcd5503c3718c2303bf958538cf94fcb5606e4e01\"},{\"case_id\":15,\"token\":\"0x0dfcceb1147e0ff11a442602a245e34d2febc977\"}],\"precedent_case_id\":5,\"skipped\":[]}",
+      "seconds": 14,
+      "at": "2026-09-30T07:33:38.136Z",
+      "precedent_case_id": 5,
+      "result": {
+        "flagged": [
+          {
+            "case_id": 11,
+            "token": "0x293971fc9f23addadfb5be29a4542c0e2bf67ba8"
+          },
+          {
+            "case_id": 12,
+            "token": "0x1c1deb401e94f4826260ca888e53180819449714"
+          },
+          {
+            "case_id": 13,
+            "token": "0x755a31d5ddbf5cb69b15d50a01a0ea1ae15ce474"
+          },
+          {
+            "case_id": 14,
+            "token": "0xcd5503c3718c2303bf958538cf94fcb5606e4e01"
+          },
+          {
+            "case_id": 15,
+            "token": "0x0dfcceb1147e0ff11a442602a245e34d2febc977"
+          }
+        ],
+        "precedent_case_id": 5,
+        "skipped": []
+      },
+      "cases": [
+        {
+          "token": "0x293971FC9f23AddadfB5bE29a4542C0E2BF67ba8",
+          "case_id": 11,
+          "state": "IMPERSONATOR",
+          "basis": "PRECEDENT",
+          "root_case_id": 5
+        },
+        {
+          "token": "0x1C1dEB401E94f4826260Ca888E53180819449714",
+          "case_id": 12,
+          "state": "IMPERSONATOR",
+          "basis": "PRECEDENT",
+          "root_case_id": 5
+        },
+        {
+          "token": "0x755A31d5dDbF5Cb69B15d50a01a0ea1ae15Ce474",
+          "case_id": 13,
+          "state": "IMPERSONATOR",
+          "basis": "PRECEDENT",
+          "root_case_id": 5
+        },
+        {
+          "token": "0xCd5503c3718C2303Bf958538cF94FcB5606E4E01",
+          "case_id": 14,
+          "state": "IMPERSONATOR",
+          "basis": "PRECEDENT",
+          "root_case_id": 5
+        },
+        {
+          "token": "0x0dFCCeB1147e0Ff11a442602a245E34D2FEBC977",
+          "case_id": 15,
+          "state": "IMPERSONATOR",
+          "basis": "PRECEDENT",
+          "root_case_id": 5
+        }
+      ],
+      "actual": "5 x IMPERSONATOR/PRECEDENT",
+      "done": true,
+      "match": true
+    },
+    "C12": {
+      "id": "C12",
+      "instance": "CANONICAL",
+      "contract": "0xA46276c6F0C151D1DB645239bd0190325d0C3177",
+      "signer": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+      "method": "flag",
+      "args": [
+        "base",
+        "0x07f3c9Ba9a0C06204C8489B62291d5B0e77615A1",
+        "tether"
+      ],
+      "expected": "refused: the official list does not cover this coin on this chain",
+      "note": "a 'Tether USD' copy on Base: the list has no Tether on Base, so the pair is refused",
+      "tx": "0x27e3935642e22e489e95b2108c7a5ee98a96b3bc2588992dc5507ca6734442c7",
+      "status": "ACCEPTED",
+      "reverted": true,
+      "revert_reason": "the official list does not cover this coin on this chain",
+      "returned": null,
+      "seconds": 12,
+      "at": "2026-09-30T07:34:07.714Z",
+      "actual": "refused: the official list does not cover this coin on this chain",
+      "done": true,
+      "match": true
+    },
+    "S1": {
+      "id": "S1",
+      "instance": "SAFELIST",
+      "contract": "0xFF66Ca6d86be7Aa9e1848ba932e2BaA492BCA49b",
+      "signer": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+      "method": "add_token",
+      "args": [
+        "ethereum",
+        "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+      ],
+      "expected": "added",
+      "note": "real USDC (CANONICAL case C7 is OFFICIAL)",
+      "tx": "0xea0fcc539659cd9d2baa7bc27d86583c96ede4e29b2a2870ae1a83927b65ebfb",
+      "status": "ACCEPTED",
+      "reverted": false,
+      "revert_reason": "",
+      "returned": "{\"added\": true, \"chain\": \"ethereum\", \"token\": \"0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48\"}",
+      "seconds": 12,
+      "at": "2026-09-30T07:34:19.980Z",
+      "actual": "added",
+      "done": true,
+      "match": true
+    },
+    "S2": {
+      "id": "S2",
+      "instance": "SAFELIST",
+      "contract": "0xFF66Ca6d86be7Aa9e1848ba932e2BaA492BCA49b",
+      "signer": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+      "method": "add_token",
+      "args": [
+        "arbitrum",
+        "0x8Fd886c4021ed69a968f6966F818e476868B00eD"
+      ],
+      "expected": "refused: IMPERSONATOR",
+      "note": "the C5 fake",
+      "tx": "0xc24ca6249cf662d604e22687b7be1797855a136e7bea9ed03fe14095825ff313",
+      "status": "ACCEPTED",
+      "reverted": true,
+      "revert_reason": "refused: Lookalike rules 0x8fd886c4021ed69a968f6966f818e476868b00ed on arbitrum an IMPERSONATOR",
+      "returned": null,
+      "seconds": 13,
+      "at": "2026-09-30T07:34:33.275Z",
+      "actual": "refused: IMPERSONATOR",
+      "done": true,
+      "match": true
+    },
+    "S3": {
+      "id": "S3",
+      "instance": "SAFELIST",
+      "contract": "0xFF66Ca6d86be7Aa9e1848ba932e2BaA492BCA49b",
+      "signer": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+      "method": "add_token",
+      "args": [
+        "arbitrum",
+        "0x35E57438a1348e3441501d5F4ea892Bc81009511"
+      ],
+      "expected": "added",
+      "note": "a fake nobody has flagged yet (byte-identical to C3): the list has no reason to refuse it",
+      "tx": "0xed3b62defc4eeb03f3bc5dfee3b648ef4dac8a61918a8feb356ea7e3b996c4f6",
+      "status": "ACCEPTED",
+      "reverted": false,
+      "revert_reason": "",
+      "returned": "{\"added\": true, \"chain\": \"arbitrum\", \"token\": \"0x35e57438a1348e3441501d5f4ea892bc81009511\"}",
+      "seconds": 12,
+      "at": "2026-09-30T07:34:45.146Z",
+      "actual": "added",
+      "done": true,
+      "match": true
+    },
+    "C13": {
+      "id": "C13",
+      "instance": "CANONICAL",
+      "contract": "0xA46276c6F0C151D1DB645239bd0190325d0C3177",
+      "signer": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+      "method": "flag",
+      "args": [
+        "arbitrum",
+        "0x35E57438a1348e3441501d5F4ea892Bc81009511",
+        "usd-coin"
+      ],
+      "expected": "IMPERSONATOR/HOMOGLYPH",
+      "note": "the same fake, flagged after it was listed",
+      "tx": "0x8b4a086bbdd434e82746261b7fb35cd75735396b095a5d042503916f7cd62a6f",
+      "status": "ACCEPTED",
+      "reverted": false,
+      "revert_reason": "",
+      "returned": 16,
+      "seconds": 15,
+      "at": "2026-09-30T07:34:59.878Z",
+      "case_id": 16,
+      "actual": "IMPERSONATOR/HOMOGLYPH",
+      "case": {
+        "basis": "HOMOGLYPH",
+        "case_id": 16,
+        "chain": "arbitrum",
+        "coin": "usd-coin",
+        "created_at": 1790753689,
+        "deadline": 1790775289,
+        "decimals": "6",
+        "facts": {
+          "disclosure": [],
+          "disguised": true,
+          "folded_name": "USDCOIN",
+          "folded_symbol": "USDC",
+          "name_len": 8,
+          "official_on_chain": true,
+          "skeleton_name": "USDCOIN",
+          "skeleton_symbol": "USDC",
+          "symbol_len": 6,
+          "unknown_chars": false
+        },
+        "flagged_by": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+        "history": [
+          {
+            "at": 1790753689,
+            "basis": "HOMOGLYPH",
+            "decimals": "6",
+            "evidence_sha256": "63848f383b7aeccc55d61e324c6e99a211cc8e3f696eb953dd67f0fd3974c2dc",
+            "label": "IMPERSONATOR",
+            "name_sha256": "4551f5a5957e4cb87d60aa260b61c8ed5256649a489ced68fe078c16d6558b8b",
+            "symbol_sha256": "678aa927c1caff5f58e0ebf8e13bc25e641524a4a52eab22a26e019cb0c326db"
+          }
+        ],
+        "list_entry": null,
+        "meaning": "presents itself as the coin without being on the coin's official list",
+        "name": "USD Coin",
+        "official_addresses": [
+          "0xaf88d065e77c8cc2239327c5edb3a432268e5831"
+        ],
+        "official_list_entry": null,
+        "rechecks": 0,
+        "root_case_id": 0,
+        "ruled_at": 1790753689,
+        "state": "IMPERSONATOR",
+        "symbol": "U⁯SD‍C",
+        "token": "0x35e57438a1348e3441501d5f4ea892bc81009511",
+        "token_type": "ERC-20"
+      },
+      "done": true,
+      "match": true
+    },
+    "S4": {
+      "id": "S4",
+      "instance": "SAFELIST",
+      "contract": "0xFF66Ca6d86be7Aa9e1848ba932e2BaA492BCA49b",
+      "signer": "0x48150242829085eF44fCe01668d77f6691DDe07d",
+      "method": "prune",
+      "args": [
+        "arbitrum",
+        "0x35E57438a1348e3441501d5F4ea892Bc81009511"
+      ],
+      "expected": "pruned",
+      "note": "a different account prunes it now that the register rules it an IMPERSONATOR",
+      "tx": "0xd67de9d9d30c5b83a626c0a5ddd00c0e066a9f23f244637a4b68bed1055d5b94",
+      "status": "ACCEPTED",
+      "reverted": false,
+      "revert_reason": "",
+      "returned": "{\"chain\": \"arbitrum\", \"pruned\": true, \"token\": \"0x35e57438a1348e3441501d5f4ea892bc81009511\"}",
+      "seconds": 12,
+      "at": "2026-09-30T07:35:14.428Z",
+      "actual": "pruned",
+      "done": true,
+      "match": true
+    },
+    "D5": {
+      "id": "D5",
+      "instance": "DEMO",
+      "contract": "0xeE89132Cc5FB910d40481BE8CD01ac04aA7299fc",
+      "signer": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+      "method": "recheck",
+      "args": [
+        2
+      ],
+      "expected": "IMPERSONATOR/EXACT_COPY",
+      "note": "after the 3-minute cooldown; history keeps the first ruling",
+      "tx": "0xf0497728439b6c4a274d69e9c87f431f72b145a5e5233e39ef113f68fcbfb9ec",
+      "status": "ACCEPTED",
+      "reverted": false,
+      "revert_reason": "",
+      "returned": "{\"basis\":\"EXACT_COPY\",\"changed\":false,\"state\":\"IMPERSONATOR\"}",
+      "seconds": 14,
+      "at": "2026-09-30T07:35:32.663Z",
+      "result": {
+        "basis": "EXACT_COPY",
+        "changed": false,
+        "state": "IMPERSONATOR"
+      },
+      "history": [
+        {
+          "at": 1790753357,
+          "basis": "EXACT_COPY",
+          "decimals": "6",
+          "evidence_sha256": "7155a55ce84fac6dca2f886d946e017f398a575f29cde02dfce04d930cac2ecf",
+          "label": "IMPERSONATOR",
+          "name_sha256": "8591ee9090c0c02ca1f103cb637131d8f358870aba145245ff083e138fdd705b",
+          "symbol_sha256": "8591ee9090c0c02ca1f103cb637131d8f358870aba145245ff083e138fdd705b"
+        },
+        {
+          "at": 1790753721,
+          "basis": "EXACT_COPY",
+          "decimals": "6",
+          "evidence_sha256": "7155a55ce84fac6dca2f886d946e017f398a575f29cde02dfce04d930cac2ecf",
+          "label": "IMPERSONATOR",
+          "name_sha256": "8591ee9090c0c02ca1f103cb637131d8f358870aba145245ff083e138fdd705b",
+          "symbol_sha256": "8591ee9090c0c02ca1f103cb637131d8f358870aba145245ff083e138fdd705b"
+        }
+      ],
+      "case": {
+        "basis": "EXACT_COPY",
+        "case_id": 2,
+        "chain": "arbitrum",
+        "coin": "usd-coin",
+        "created_at": 1790753357,
+        "deadline": 1790753657,
+        "decimals": "6",
+        "facts": {
+          "disclosure": [],
+          "disguised": false,
+          "folded_name": "USDC",
+          "folded_symbol": "USDC",
+          "name_len": 4,
+          "official_on_chain": true,
+          "skeleton_name": "USDC",
+          "skeleton_symbol": "USDC",
+          "symbol_len": 4,
+          "unknown_chars": false
+        },
+        "flagged_by": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+        "history": [
+          {
+            "at": 1790753357,
+            "basis": "EXACT_COPY",
+            "decimals": "6",
+            "evidence_sha256": "7155a55ce84fac6dca2f886d946e017f398a575f29cde02dfce04d930cac2ecf",
+            "label": "IMPERSONATOR",
+            "name_sha256": "8591ee9090c0c02ca1f103cb637131d8f358870aba145245ff083e138fdd705b",
+            "symbol_sha256": "8591ee9090c0c02ca1f103cb637131d8f358870aba145245ff083e138fdd705b"
+          },
+          {
+            "at": 1790753721,
+            "basis": "EXACT_COPY",
+            "decimals": "6",
+            "evidence_sha256": "7155a55ce84fac6dca2f886d946e017f398a575f29cde02dfce04d930cac2ecf",
+            "label": "IMPERSONATOR",
+            "name_sha256": "8591ee9090c0c02ca1f103cb637131d8f358870aba145245ff083e138fdd705b",
+            "symbol_sha256": "8591ee9090c0c02ca1f103cb637131d8f358870aba145245ff083e138fdd705b"
+          }
+        ],
+        "list_entry": null,
+        "meaning": "presents itself as the coin without being on the coin's official list",
+        "name": "USDC",
+        "official_addresses": [
+          "0xaf88d065e77c8cc2239327c5edb3a432268e5831"
+        ],
+        "official_list_entry": null,
+        "rechecks": 1,
+        "root_case_id": 0,
+        "ruled_at": 1790753721,
+        "state": "IMPERSONATOR",
+        "symbol": "USDC",
+        "token": "0x8fd886c4021ed69a968f6966f818e476868b00ed",
+        "token_type": "ERC-20"
+      },
+      "actual": "IMPERSONATOR/EXACT_COPY",
+      "done": true,
+      "match": true
+    },
+    "M1r": {
+      "id": "M1r",
+      "instance": "DEMO",
+      "contract": "0xeE89132Cc5FB910d40481BE8CD01ac04aA7299fc",
+      "signer": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+      "method": "recheck",
+      "args": [
+        3
+      ],
+      "expected": "VARIANT/MODEL",
+      "note": "'Axelar Wrapped USDC' / 'axlUSDC': model run 2 (recheck)",
+      "tx": "0x5a9e48e8cf1ccd539caee9d5e0dc366616ac711bae39e6e60fb7198e9901a996",
+      "status": "ACCEPTED",
+      "reverted": false,
+      "revert_reason": "",
+      "returned": "{\"basis\":\"MODEL\",\"changed\":false,\"state\":\"VARIANT\"}",
+      "seconds": 22,
+      "at": "2026-09-30T07:35:58.450Z",
+      "result": {
+        "basis": "MODEL",
+        "changed": false,
+        "state": "VARIANT"
+      },
+      "history": [
+        {
+          "at": 1790753387,
+          "basis": "MODEL",
+          "decimals": "6",
+          "evidence_sha256": "771000408085c8e5ce41d3d885e6d9de76a471a7224c2d7ea2998d0e1851c50f",
+          "label": "VARIANT",
+          "name_sha256": "37cdd7c4ca930b12f890cedf062b042da46e3b94c863797c70f5ef93d3056b24",
+          "symbol_sha256": "19368eb07fe5148559d021bb2425e768f62f0b504580fa8efe0d47daf14da1af"
+        },
+        {
+          "at": 1790753741,
+          "basis": "MODEL",
+          "decimals": "6",
+          "evidence_sha256": "771000408085c8e5ce41d3d885e6d9de76a471a7224c2d7ea2998d0e1851c50f",
+          "label": "VARIANT",
+          "name_sha256": "37cdd7c4ca930b12f890cedf062b042da46e3b94c863797c70f5ef93d3056b24",
+          "symbol_sha256": "19368eb07fe5148559d021bb2425e768f62f0b504580fa8efe0d47daf14da1af"
+        }
+      ],
+      "case": {
+        "basis": "MODEL",
+        "case_id": 3,
+        "chain": "arbitrum",
+        "coin": "usd-coin",
+        "created_at": 1790753387,
+        "deadline": 1790753687,
+        "decimals": "6",
+        "facts": {
+          "disclosure": [
+            "AXELAR"
+          ],
+          "disguised": false,
+          "folded_name": "AXELARWRAPPEDUSDC",
+          "folded_symbol": "AXLUSDC",
+          "name_len": 19,
+          "official_on_chain": true,
+          "skeleton_name": "AXELARWRAPPEDUSDC",
+          "skeleton_symbol": "AXLUSDC",
+          "symbol_len": 7,
+          "unknown_chars": false
+        },
+        "flagged_by": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+        "history": [
+          {
+            "at": 1790753387,
+            "basis": "MODEL",
+            "decimals": "6",
+            "evidence_sha256": "771000408085c8e5ce41d3d885e6d9de76a471a7224c2d7ea2998d0e1851c50f",
+            "label": "VARIANT",
+            "name_sha256": "37cdd7c4ca930b12f890cedf062b042da46e3b94c863797c70f5ef93d3056b24",
+            "symbol_sha256": "19368eb07fe5148559d021bb2425e768f62f0b504580fa8efe0d47daf14da1af"
+          },
+          {
+            "at": 1790753741,
+            "basis": "MODEL",
+            "decimals": "6",
+            "evidence_sha256": "771000408085c8e5ce41d3d885e6d9de76a471a7224c2d7ea2998d0e1851c50f",
+            "label": "VARIANT",
+            "name_sha256": "37cdd7c4ca930b12f890cedf062b042da46e3b94c863797c70f5ef93d3056b24",
+            "symbol_sha256": "19368eb07fe5148559d021bb2425e768f62f0b504580fa8efe0d47daf14da1af"
+          }
+        ],
+        "list_entry": null,
+        "meaning": "openly labelled bridged or wrapped version of the coin, not on the official list",
+        "name": "Axelar Wrapped USDC",
+        "official_addresses": [
+          "0xaf88d065e77c8cc2239327c5edb3a432268e5831"
+        ],
+        "official_list_entry": null,
+        "rechecks": 1,
+        "root_case_id": 0,
+        "ruled_at": 1790753741,
+        "state": "VARIANT",
+        "symbol": "axlUSDC",
+        "token": "0xeb466342c4d449bc9f53a865d5cb90586f405215",
+        "token_type": "ERC-20"
+      },
+      "actual": "VARIANT/MODEL",
+      "runs": [
+        "VARIANT",
+        "VARIANT"
+      ],
+      "done": true,
+      "match": true
+    },
+    "M2r": {
+      "id": "M2r",
+      "instance": "DEMO",
+      "contract": "0xeE89132Cc5FB910d40481BE8CD01ac04aA7299fc",
+      "signer": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+      "method": "recheck",
+      "args": [
+        4
+      ],
+      "expected": "UNRELATED/MODEL",
+      "note": "'Spark USDC Vault' / 'sUSDC': model run 2 (recheck)",
+      "tx": "0xbf12a69177ad1dd5155b703a6a5e8bdf255795996c16343df7bc3c05c6b37045",
+      "status": "ACCEPTED",
+      "reverted": false,
+      "revert_reason": "",
+      "returned": "{\"basis\":\"MODEL\",\"changed\":false,\"state\":\"UNRELATED\"}",
+      "seconds": 28,
+      "at": "2026-09-30T07:36:31.835Z",
+      "result": {
+        "basis": "MODEL",
+        "changed": false,
+        "state": "UNRELATED"
+      },
+      "history": [
+        {
+          "at": 1790753415,
+          "basis": "MODEL",
+          "decimals": "18",
+          "evidence_sha256": "11827b2b281974f09bc39103a66291809a273cb8198a76ca378b48d0b244dc8d",
+          "label": "UNRELATED",
+          "name_sha256": "88aceb85214ca967bee9dfc4ee213aea896d348264a472b448c4e0d2e0df0c86",
+          "symbol_sha256": "2d91e1f166f4540e816b83ba7cc2df08b4d5ce17d329e97cd31614d1bc0f8892"
+        },
+        {
+          "at": 1790753768,
+          "basis": "MODEL",
+          "decimals": "18",
+          "evidence_sha256": "11827b2b281974f09bc39103a66291809a273cb8198a76ca378b48d0b244dc8d",
+          "label": "UNRELATED",
+          "name_sha256": "88aceb85214ca967bee9dfc4ee213aea896d348264a472b448c4e0d2e0df0c86",
+          "symbol_sha256": "2d91e1f166f4540e816b83ba7cc2df08b4d5ce17d329e97cd31614d1bc0f8892"
+        }
+      ],
+      "case": {
+        "basis": "MODEL",
+        "case_id": 4,
+        "chain": "ethereum",
+        "coin": "usd-coin",
+        "created_at": 1790753415,
+        "deadline": 1790753715,
+        "decimals": "18",
+        "facts": {
+          "disclosure": [],
+          "disguised": false,
+          "folded_name": "SPARKUSDCVAULT",
+          "folded_symbol": "SUSDC",
+          "name_len": 16,
+          "official_on_chain": true,
+          "skeleton_name": "SPARKUSDCVAULT",
+          "skeleton_symbol": "SUSDC",
+          "symbol_len": 5,
+          "unknown_chars": false
+        },
+        "flagged_by": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+        "history": [
+          {
+            "at": 1790753415,
+            "basis": "MODEL",
+            "decimals": "18",
+            "evidence_sha256": "11827b2b281974f09bc39103a66291809a273cb8198a76ca378b48d0b244dc8d",
+            "label": "UNRELATED",
+            "name_sha256": "88aceb85214ca967bee9dfc4ee213aea896d348264a472b448c4e0d2e0df0c86",
+            "symbol_sha256": "2d91e1f166f4540e816b83ba7cc2df08b4d5ce17d329e97cd31614d1bc0f8892"
+          },
+          {
+            "at": 1790753768,
+            "basis": "MODEL",
+            "decimals": "18",
+            "evidence_sha256": "11827b2b281974f09bc39103a66291809a273cb8198a76ca378b48d0b244dc8d",
+            "label": "UNRELATED",
+            "name_sha256": "88aceb85214ca967bee9dfc4ee213aea896d348264a472b448c4e0d2e0df0c86",
+            "symbol_sha256": "2d91e1f166f4540e816b83ba7cc2df08b4d5ce17d329e97cd31614d1bc0f8892"
+          }
+        ],
+        "list_entry": null,
+        "meaning": "does not present itself as the coin",
+        "name": "Spark USDC Vault",
+        "official_addresses": [
+          "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+        ],
+        "official_list_entry": null,
+        "rechecks": 1,
+        "root_case_id": 0,
+        "ruled_at": 1790753768,
+        "state": "UNRELATED",
+        "symbol": "sUSDC",
+        "token": "0xbc65ad17c5c0a2a4d159fa5a503f4992c7b545fe",
+        "token_type": "ERC-20"
+      },
+      "actual": "UNRELATED/MODEL",
+      "runs": [
+        "UNRELATED",
+        "UNRELATED"
+      ],
+      "done": true,
+      "match": true
+    },
+    "M3r": {
+      "id": "M3r",
+      "instance": "DEMO",
+      "contract": "0xeE89132Cc5FB910d40481BE8CD01ac04aA7299fc",
+      "signer": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+      "method": "recheck",
+      "args": [
+        5
+      ],
+      "expected": "IMPERSONATOR/MODEL",
+      "note": "real fake: 'Bridged USDC' / 'USDC.e' padded with invisible characters: model run 2 (recheck)",
+      "tx": "0xbbf87a4ec668814b4570c064b9a19200d8b2841340221b737c84a86499541c69",
+      "status": "ACCEPTED",
+      "reverted": false,
+      "revert_reason": "",
+      "returned": "{\"basis\":\"MODEL\",\"changed\":false,\"state\":\"VARIANT\"}",
+      "seconds": 18,
+      "at": "2026-09-30T07:36:54.348Z",
+      "result": {
+        "basis": "MODEL",
+        "changed": false,
+        "state": "VARIANT"
+      },
+      "history": [
+        {
+          "at": 1790753444,
+          "basis": "MODEL",
+          "decimals": "6",
+          "evidence_sha256": "595b95b3960be8c7b52095959487a5941106fe5f73a076c7c75195dfd3d73722",
+          "label": "VARIANT",
+          "name_sha256": "23a98c3bed66f1a0706515722e50b2b1b9fabd316a394d101a16dd035b5898ab",
+          "symbol_sha256": "7ab89ec373cf2125901477e6758e7acd98c3158dc43a738987fba1fdac6a26bf"
+        },
+        {
+          "at": 1790753799,
+          "basis": "MODEL",
+          "decimals": "6",
+          "evidence_sha256": "595b95b3960be8c7b52095959487a5941106fe5f73a076c7c75195dfd3d73722",
+          "label": "VARIANT",
+          "name_sha256": "23a98c3bed66f1a0706515722e50b2b1b9fabd316a394d101a16dd035b5898ab",
+          "symbol_sha256": "7ab89ec373cf2125901477e6758e7acd98c3158dc43a738987fba1fdac6a26bf"
+        }
+      ],
+      "case": {
+        "basis": "MODEL",
+        "case_id": 5,
+        "chain": "arbitrum",
+        "coin": "usd-coin",
+        "created_at": 1790753444,
+        "deadline": 1790753744,
+        "decimals": "6",
+        "facts": {
+          "disclosure": [
+            ".E",
+            "BRIDGED"
+          ],
+          "disguised": true,
+          "folded_name": "BRIDGEDUSDC",
+          "folded_symbol": "USDCE",
+          "name_len": 20,
+          "official_on_chain": true,
+          "skeleton_name": "BRIDGEDUSDC",
+          "skeleton_symbol": "USDCE",
+          "symbol_len": 11,
+          "unknown_chars": false
+        },
+        "flagged_by": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+        "history": [
+          {
+            "at": 1790753444,
+            "basis": "MODEL",
+            "decimals": "6",
+            "evidence_sha256": "595b95b3960be8c7b52095959487a5941106fe5f73a076c7c75195dfd3d73722",
+            "label": "VARIANT",
+            "name_sha256": "23a98c3bed66f1a0706515722e50b2b1b9fabd316a394d101a16dd035b5898ab",
+            "symbol_sha256": "7ab89ec373cf2125901477e6758e7acd98c3158dc43a738987fba1fdac6a26bf"
+          },
+          {
+            "at": 1790753799,
+            "basis": "MODEL",
+            "decimals": "6",
+            "evidence_sha256": "595b95b3960be8c7b52095959487a5941106fe5f73a076c7c75195dfd3d73722",
+            "label": "VARIANT",
+            "name_sha256": "23a98c3bed66f1a0706515722e50b2b1b9fabd316a394d101a16dd035b5898ab",
+            "symbol_sha256": "7ab89ec373cf2125901477e6758e7acd98c3158dc43a738987fba1fdac6a26bf"
+          }
+        ],
+        "list_entry": null,
+        "meaning": "openly labelled bridged or wrapped version of the coin, not on the official list",
+        "name": "Br‌id⁫g⁤e⁪d U⁢S​D⁢C⁠",
+        "official_addresses": [
+          "0xaf88d065e77c8cc2239327c5edb3a432268e5831"
+        ],
+        "official_list_entry": null,
+        "rechecks": 1,
+        "root_case_id": 0,
+        "ruled_at": 1790753799,
+        "state": "VARIANT",
+        "symbol": "U‌S​DC⁢.e﻿﻿",
+        "token": "0xe3f520d5c6f5421ee02160242f7a9e025d829e3e",
+        "token_type": "ERC-20"
+      },
+      "actual": "VARIANT/MODEL",
+      "runs": [
+        "VARIANT",
+        "VARIANT"
+      ],
+      "done": true,
+      "match": false,
+      "why": "Same as M3: second model run, same label."
+    },
+    "D6": {
+      "id": "D6",
+      "instance": "DEMO",
+      "contract": "0xeE89132Cc5FB910d40481BE8CD01ac04aA7299fc",
+      "signer": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+      "method": "expire",
+      "args": [
+        1
+      ],
+      "expected": "EXPIRED",
+      "note": "after the 5-minute rule window",
+      "tx": "0x31f7aa938271bb7a716c8e20b50332eadab820844475002025824cd364781dbb",
+      "status": "ACCEPTED",
+      "reverted": false,
+      "revert_reason": "",
+      "returned": "EXPIRED",
+      "seconds": 13,
+      "at": "2026-09-30T07:37:10.214Z",
+      "actual": "EXPIRED",
+      "done": true,
+      "match": true
+    },
+    "D7": {
+      "id": "D7",
+      "instance": "DEMO",
+      "contract": "0xeE89132Cc5FB910d40481BE8CD01ac04aA7299fc",
+      "signer": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+      "method": "flag",
+      "args": [
+        "base",
+        "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+        "usd-coin"
+      ],
+      "expected": "PENDING",
+      "note": "the same key flagged again after EXPIRED: a new case (still no contract at that address on Base)",
+      "tx": "0x99477ee7542ffc55a8578fce480e4d44f7a3fe0938500339db4bf4e9ba06e275",
+      "status": "ACCEPTED",
+      "reverted": false,
+      "revert_reason": "",
+      "returned": 6,
+      "seconds": 22,
+      "at": "2026-09-30T07:37:33.801Z",
+      "case_id": 6,
+      "previous_case_id": 1,
+      "case": {
+        "basis": "",
+        "case_id": 6,
+        "chain": "base",
+        "coin": "usd-coin",
+        "created_at": 1790753838,
+        "deadline": 1790754138,
+        "decimals": "",
+        "facts": {},
+        "flagged_by": "0xbf37aFFc6f04daEFC27Cde871cC13E6E40d6b85d",
+        "history": [],
+        "list_entry": null,
+        "meaning": "flagged; evidence not yet agreed",
+        "name": "",
+        "official_addresses": [],
+        "official_list_entry": null,
+        "rechecks": 0,
+        "root_case_id": 0,
+        "ruled_at": 0,
+        "state": "PENDING",
+        "symbol": "",
+        "token": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+        "token_type": ""
+      },
+      "actual": "PENDING",
+      "done": true,
+      "match": true
+    }
+  },
+  "safelist_tokens": [
+    {
+      "added_at": "2026-09-30T07:34:11.860167Z",
+      "chain": "ethereum",
+      "token": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+    }
+  ],
+  "safelist_pruned": [
+    {
+      "added_at": "2026-09-30T07:34:37.146001Z",
+      "chain": "arbitrum",
+      "removed_at": "2026-09-30T07:35:06.846646Z",
+      "token": "0x35e57438a1348e3441501d5f4ea892bc81009511"
+    }
+  ],
+  "stats": {
+    "CANONICAL": {
+      "by_state": {
+        "EXPIRED": 0,
+        "IMPERSONATOR": 12,
+        "OFFICIAL": 1,
+        "PENDING": 0,
+        "UNRELATED": 1,
+        "VARIANT": 2
+      },
+      "cases": 16,
+      "model_rulings": 1,
+      "precedent_flags": 5,
+      "rechecks": 0
+    },
+    "DEMO": {
+      "by_state": {
+        "EXPIRED": 1,
+        "IMPERSONATOR": 1,
+        "OFFICIAL": 0,
+        "PENDING": 1,
+        "UNRELATED": 1,
+        "VARIANT": 2
+      },
+      "cases": 6,
+      "model_rulings": 6,
+      "precedent_flags": 0,
+      "rechecks": 4
+    }
+  }
+}

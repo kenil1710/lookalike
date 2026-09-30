@@ -103,7 +103,7 @@ const waitUntil = async (epoch, why) => {
   }
 };
 
-if (!argOf("report")) {
+if (!process.argv.includes("--report")) {
   // DEMO first: its clocks run while CANONICAL is seeded.
   const D1 = await step("D1", "DEMO", "flag", ["base", USDC_ETH, "usd-coin"], "PENDING", "the Ethereum USDC address on Base: no contract there (eth_getCode is empty), so the evidence fails", flagCheck("DEMO", "base", USDC_ETH, "usd-coin"));
   await step("D2", "DEMO", "rule", [D1.case_id], "PENDING", "anyone retries before the 5-minute deadline; still no contract", async () => ({ actual: (await caseOf("DEMO", "base", USDC_ETH, "usd-coin")).state }));
